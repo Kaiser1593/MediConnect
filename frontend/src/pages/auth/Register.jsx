@@ -1,8 +1,80 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import api from "../../services/api";
 
 function Register() {
-  const handleSubmit = (event) => {
+  const [formData, setFormData] = useState({
+    firstname: "",
+    lastname: "",
+    email: "",
+    role: "patient",
+    password: "",
+    confirmPassword: "",
+  });
+
+  const [message, setMessage] = useState({
+    type: "",
+    text: "",
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    setFormData((previousData) => ({
+      ...previousData,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
+
+    setMessage({
+      type: "",
+      text: "",
+    });
+
+    if (formData.password !== formData.confirmPassword) {
+      setMessage({
+        type: "error",
+        text: "Les mots de passe ne correspondent pas.",
+      });
+
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      const response = await api.post("/auth/register", formData);
+
+      setMessage({
+        type: "success",
+        text: response.data.message,
+      });
+
+      setFormData({
+        firstname: "",
+        lastname: "",
+        email: "",
+        role: "patient",
+        password: "",
+        confirmPassword: "",
+      });
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        "Une erreur est survenue lors de l'inscription.";
+
+      setMessage({
+        type: "error",
+        text: errorMessage,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -42,15 +114,24 @@ function Register() {
             <p>Renseignez vos informations personnelles.</p>
           </div>
 
+          {message.text && (
+            <div className={`form-message ${message.type}`} role="alert">
+              {message.text}
+            </div>
+          )}
+
           <form className="auth-form" onSubmit={handleSubmit}>
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="firstname">Prénom</label>
+
                 <input
                   id="firstname"
                   name="firstname"
                   type="text"
                   placeholder="Votre prénom"
+                  value={formData.firstname}
+                  onChange={handleChange}
                   autoComplete="given-name"
                   required
                 />
@@ -58,11 +139,14 @@ function Register() {
 
               <div className="form-group">
                 <label htmlFor="lastname">Nom</label>
+
                 <input
                   id="lastname"
                   name="lastname"
                   type="text"
                   placeholder="Votre nom"
+                  value={formData.lastname}
+                  onChange={handleChange}
                   autoComplete="family-name"
                   required
                 />
@@ -71,11 +155,14 @@ function Register() {
 
             <div className="form-group">
               <label htmlFor="register-email">Adresse e-mail</label>
+
               <input
                 id="register-email"
                 name="email"
                 type="email"
                 placeholder="exemple@email.fr"
+                value={formData.email}
+                onChange={handleChange}
                 autoComplete="email"
                 required
               />
@@ -83,7 +170,14 @@ function Register() {
 
             <div className="form-group">
               <label htmlFor="role">Type de compte</label>
-              <select id="role" name="role" defaultValue="patient" required>
+
+              <select
+                id="role"
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                required
+              >
                 <option value="patient">Patient</option>
                 <option value="doctor">Médecin</option>
               </select>
@@ -92,11 +186,14 @@ function Register() {
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="register-password">Mot de passe</label>
+
                 <input
                   id="register-password"
                   name="password"
                   type="password"
                   placeholder="8 caractères minimum"
+                  value={formData.password}
+                  onChange={handleChange}
                   autoComplete="new-password"
                   minLength="8"
                   required
@@ -107,11 +204,14 @@ function Register() {
                 <label htmlFor="confirm-password">
                   Confirmer le mot de passe
                 </label>
+
                 <input
                   id="confirm-password"
                   name="confirmPassword"
                   type="password"
                   placeholder="Confirmez le mot de passe"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
                   autoComplete="new-password"
                   minLength="8"
                   required
@@ -121,14 +221,19 @@ function Register() {
 
             <label className="terms-checkbox">
               <input type="checkbox" required />
+
               <span>
                 J’accepte les conditions d’utilisation et la politique de
                 confidentialité.
               </span>
             </label>
 
-            <button type="submit" className="auth-submit-button">
-              Créer mon compte
+            <button
+              type="submit"
+              className="auth-submit-button"
+              disabled={isLoading}
+            >
+              {isLoading ? "Création en cours..." : "Créer mon compte"}
             </button>
           </form>
 
