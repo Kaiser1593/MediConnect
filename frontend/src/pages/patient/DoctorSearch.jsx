@@ -51,8 +51,6 @@ function DoctorSearch() {
   return (
     <DemoLayout
       role="Espace patient"
-      userName="Kaïs Padrines"
-      initials="KP"
       title="Rechercher un médecin"
       subtitle="Trouvez rapidement un professionnel de santé."
       menu={menu}

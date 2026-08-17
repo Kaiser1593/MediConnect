@@ -1,8 +1,22 @@
-import { NavLink } from "react-router-dom";
+// src/components/layout/Sidebar.jsx
+
+import { NavLink, useNavigate } from "react-router-dom";
+
+import useAuth from "../../hooks/useAuth";
 
 function Sidebar() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
   const getLinkClass = ({ isActive }) =>
     isActive ? "sidebar-link active" : "sidebar-link";
+
+  // Un simple lien vers /connexion ne déconnectait personne :
+  // le token restait en place et l'utilisateur restait authentifié.
+  const handleLogout = () => {
+    logout();
+    navigate("/connexion", { replace: true });
+  };
 
   return (
     <aside className="sidebar">
@@ -40,9 +54,9 @@ function Sidebar() {
         <button type="button">Contacter l’assistance</button>
       </div>
 
-      <NavLink to="/connexion" className="sidebar-logout">
+      <button type="button" className="sidebar-logout" onClick={handleLogout}>
         Déconnexion
-      </NavLink>
+      </button>
     </aside>
   );
 }

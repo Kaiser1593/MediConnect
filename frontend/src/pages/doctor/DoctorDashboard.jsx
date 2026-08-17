@@ -39,8 +39,6 @@ function DoctorDashboard() {
   return (
     <DemoLayout
       role="Espace médecin"
-      userName="Dr Sarah Martin"
-      initials="SM"
       title="Tableau de bord médecin"
       subtitle="Gérez votre activité et vos rendez-vous."
       menu={menu}

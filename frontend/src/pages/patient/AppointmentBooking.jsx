@@ -26,8 +26,6 @@ function AppointmentBooking() {
   return (
     <DemoLayout
       role="Espace patient"
-      userName="Kaïs Padrines"
-      initials="KP"
       title="Réserver un rendez-vous"
       subtitle="Choisissez une date et un horaire disponibles."
       menu={menu}

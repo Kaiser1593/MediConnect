@@ -1,8 +1,13 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+
 import api from "../../services/api";
+import useAuth from "../../hooks/useAuth";
 
 function Register() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     firstname: "",
     lastname: "",
@@ -36,6 +41,8 @@ function Register() {
       text: "",
     });
 
+    // Contrôle côté navigateur pour un retour immédiat.
+    // Le serveur refait la même vérification : elle seule fait foi.
     if (formData.password !== formData.confirmPassword) {
       setMessage({
         type: "error",
@@ -49,20 +56,16 @@ function Register() {
       setIsLoading(true);
 
       const response = await api.post("/auth/register", formData);
+      const { token, user } = response.data;
 
-      setMessage({
-        type: "success",
-        text: response.data.message,
-      });
+      // Le compte est créé : on connecte directement l'utilisateur
+      // plutôt que de le renvoyer vers le formulaire de connexion.
+      login(token, user);
 
-      setFormData({
-        firstname: "",
-        lastname: "",
-        email: "",
-        role: "patient",
-        password: "",
-        confirmPassword: "",
-      });
+      navigate(
+        user.role === "doctor" ? "/doctor/dashboard" : "/patient/dashboard",
+        { replace: true },
+      );
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
@@ -182,6 +185,13 @@ function Register() {
                 <option value="doctor">Médecin</option>
               </select>
             </div>
+
+            {formData.role === "doctor" && (
+              <p className="form-hint">
+                Votre compte médecin devra être validé par notre équipe avant
+                d’apparaître dans les résultats de recherche.
+              </p>
+            )}
 
             <div className="form-row">
               <div className="form-group">

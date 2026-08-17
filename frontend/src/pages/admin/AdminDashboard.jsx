@@ -44,8 +44,6 @@ function AdminDashboard() {
   return (
     <DemoLayout
       role="Administration"
-      userName="Administrateur"
-      initials="AD"
       title="Tableau de bord administrateur"
       subtitle="Supervisez l’activité globale de MediConnect."
       menu={menu}

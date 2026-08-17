@@ -1,18 +1,20 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+
 import api from "../../services/api";
+import useAuth from "../../hooks/useAuth";
 
 function Login() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
 
-  const [message, setMessage] = useState({
-    type: "",
-    text: "",
-  });
-
+  const [message, setMessage] = useState({ type: "", text: "" });
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (event) => {
@@ -27,29 +29,34 @@ function Login() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    setMessage({
-      type: "",
-      text: "",
-    });
+    setMessage({ type: "", text: "" });
 
     try {
       setIsLoading(true);
 
       const response = await api.post("/auth/login", formData);
+      const { token, user } = response.data;
 
-      setMessage({
-        type: "success",
-        text: response.data.message,
-      });
+      login(token, user);
+
+      // Si l'utilisateur avait tenté d'ouvrir une page protégée,
+      // on l'y renvoie. Sinon, direction son espace selon son rôle.
+      const redirectTo =
+        location.state?.from?.pathname ||
+        {
+          patient: "/patient/dashboard",
+          doctor: "/doctor/dashboard",
+          admin: "/admin/dashboard",
+        }[user.role] ||
+        "/";
+
+      navigate(redirectTo, { replace: true });
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
         "Une erreur est survenue pendant la connexion.";
 
-      setMessage({
-        type: "error",
-        text: errorMessage,
-      });
+      setMessage({ type: "error", text: errorMessage });
     } finally {
       setIsLoading(false);
     }

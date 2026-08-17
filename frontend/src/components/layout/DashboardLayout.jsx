@@ -1,6 +1,26 @@
+// src/components/layout/DashboardLayout.jsx
+
 import Sidebar from "./Sidebar";
+import useAuth from "../../hooks/useAuth";
+
+// Libellé affiché sous le nom, selon le rôle réel de l'utilisateur.
+const ROLE_LABELS = {
+  patient: "Patient",
+  doctor: "Médecin",
+  admin: "Administrateur",
+};
 
 function DashboardLayout({ title, subtitle, children }) {
+  const { user } = useAuth();
+
+  const fullName = user ? `${user.firstname} ${user.lastname}` : "";
+
+  const initials = user
+    ? `${user.firstname[0]}${user.lastname[0]}`.toUpperCase()
+    : "";
+
+  const roleLabel = user ? ROLE_LABELS[user.role] : "";
+
   return (
     <div className="dashboard-layout">
       <Sidebar />
@@ -15,11 +35,11 @@ function DashboardLayout({ title, subtitle, children }) {
 
           <div className="dashboard-user">
             <div>
-              <strong>Kaïs Padrines</strong>
-              <span>Patient</span>
+              <strong>{fullName}</strong>
+              <span>{roleLabel}</span>
             </div>
 
-            <div className="dashboard-avatar">KP</div>
+            <div className="dashboard-avatar">{initials}</div>
           </div>
         </header>
 

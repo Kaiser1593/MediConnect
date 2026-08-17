@@ -1,4 +1,5 @@
 import DashboardLayout from "../../components/layout/DashboardLayout";
+import useAuth from "../../hooks/useAuth";
 
 const appointments = [
   {
@@ -25,9 +26,10 @@ const appointments = [
 ];
 
 function PatientDashboard() {
+  const { user } = useAuth();
   return (
     <DashboardLayout
-      title="Bonjour Kaïs 👋"
+      title={`Bonjour ${user.firstname} 👋`}
       subtitle="Voici un aperçu de votre espace personnel."
     >
       <section className="dashboard-statistics">

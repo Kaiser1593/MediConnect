@@ -1,6 +1,9 @@
 import { Route, Routes } from "react-router-dom";
+
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
+import ProtectedRoute from "./components/ProtectedRoute";
+
 import Home from "./pages/Home";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
@@ -9,7 +12,19 @@ import DoctorSearch from "./pages/patient/DoctorSearch";
 import AppointmentBooking from "./pages/patient/AppointmentBooking";
 import DoctorDashboard from "./pages/doctor/DoctorDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+
 import "./App.css";
+
+// Petit utilitaire pour ne pas répéter Navbar et Footer.
+function PublicPage({ children }) {
+  return (
+    <>
+      <Navbar />
+      {children}
+      <Footer />
+    </>
+  );
+}
 
 function App() {
   return (
@@ -18,44 +33,77 @@ function App() {
         <Route
           path="/"
           element={
-            <>
-              <Navbar />
+            <PublicPage>
               <Home />
-              <Footer />
-            </>
+            </PublicPage>
           }
         />
 
         <Route
           path="/connexion"
           element={
-            <>
-              <Navbar />
+            <PublicPage>
               <Login />
-              <Footer />
-            </>
+            </PublicPage>
           }
         />
 
         <Route
           path="/inscription"
           element={
-            <>
-              <Navbar />
+            <PublicPage>
               <Register />
-              <Footer />
-            </>
+            </PublicPage>
           }
         />
 
-        <Route path="/patient/dashboard" element={<PatientDashboard />} />
-        <Route path="/patient/medecins" element={<DoctorSearch />} />
+        {/* Espace patient */}
+        <Route
+          path="/patient/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["patient"]}>
+              <PatientDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/patient/reservation" element={<AppointmentBooking />} />
+        <Route
+          path="/patient/medecins"
+          element={
+            <ProtectedRoute allowedRoles={["patient"]}>
+              <DoctorSearch />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
+        <Route
+          path="/patient/reservation"
+          element={
+            <ProtectedRoute allowedRoles={["patient"]}>
+              <AppointmentBooking />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        {/* Espace médecin */}
+        <Route
+          path="/doctor/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["doctor"]}>
+              <DoctorDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Espace administrateur */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </div>
   );
