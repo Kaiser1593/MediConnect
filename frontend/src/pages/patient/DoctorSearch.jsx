@@ -1,52 +1,73 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import DashboardLayout from "../../components/layout/DashboardLayout";
 
-const doctors = [
-  {
-    initials: "SM",
-    name: "Dr Sarah Martin",
-    specialty: "Médecin généraliste",
-    location: "Paris 11e",
-    experience: "12 ans d’expérience",
-    availability: "Disponible aujourd’hui",
-    price: "30 €",
-  },
-  {
-    initials: "LB",
-    name: "Dr Lucas Bernard",
-    specialty: "Dermatologue",
-    location: "Paris 12e",
-    experience: "9 ans d’expérience",
-    availability: "Disponible demain",
-    price: "50 €",
-  },
-  {
-    initials: "ER",
-    name: "Dr Emma Robert",
-    specialty: "Ophtalmologue",
-    location: "Paris 19e",
-    experience: "15 ans d’expérience",
-    availability: "Disponible le 14 août",
-    price: "45 €",
-  },
-  {
-    initials: "ND",
-    name: "Dr Nicolas Dubois",
-    specialty: "Cardiologue",
-    location: "Montreuil",
-    experience: "18 ans d’expérience",
-    availability: "Disponible le 16 août",
-    price: "60 €",
-  },
+import DashboardLayout from "../../components/layout/DashboardLayout";
+import api from "../../services/api";
+
+const menu = [
+  { label: "Tableau de bord", path: "/patient/dashboard", icon: "⌂" },
+  { label: "Rechercher un médecin", path: "/patient/medecins", icon: "＋" },
+  { label: "Mes rendez-vous", path: "/patient/rendez-vous", icon: "□" },
+  { label: "Mon profil", path: "/patient/profil", icon: "○" },
 ];
 
+const getInitials = (firstname, lastname) =>
+  `${firstname[0]}${lastname[0]}`.toUpperCase();
+
 function DoctorSearch() {
-  const menu = [
-    { label: "Tableau de bord", path: "/patient/dashboard", icon: "⌂" },
-    { label: "Rechercher un médecin", path: "/patient/medecins", icon: "＋" },
-    { label: "Mes rendez-vous", path: "/patient/rendez-vous", icon: "□" },
-    { label: "Mon profil", path: "/patient/profil", icon: "○" },
-  ];
+  const [specialties, setSpecialties] = useState([]);
+  const [filters, setFilters] = useState({ search: "", specialty: "", city: "" });
+  const [appliedFilters, setAppliedFilters] = useState(filters);
+
+  const [doctors, setDoctors] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api
+      .get("/specialties")
+      .then((response) => setSpecialties(response.data.specialties))
+      .catch(() => {
+        // Un échec ici n'empêche pas la recherche : le filtre reste vide.
+      });
+  }, []);
+
+  useEffect(() => {
+    const loadDoctors = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const response = await api.get("/doctors", {
+          params: {
+            search: appliedFilters.search || undefined,
+            specialty: appliedFilters.specialty || undefined,
+            city: appliedFilters.city || undefined,
+          },
+        });
+
+        setDoctors(response.data.doctors);
+        setTotal(response.data.pagination.total);
+      } catch {
+        setError("Impossible de charger la liste des médecins.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDoctors();
+  }, [appliedFilters]);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFilters((previous) => ({ ...previous, [name]: value }));
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    setAppliedFilters(filters);
+  };
 
   return (
     <DashboardLayout
@@ -56,63 +77,99 @@ function DoctorSearch() {
       menu={menu}
     >
       <section className="search-panel">
-        <div className="search-fields">
+        <form className="search-fields" onSubmit={handleSubmit}>
           <div>
-            <label>Spécialité ou médecin</label>
-            <input placeholder="Médecin généraliste, dermatologue..." />
+            <label>Nom du médecin</label>
+            <input
+              name="search"
+              placeholder="Dr Martin..."
+              value={filters.search}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div>
+            <label>Spécialité</label>
+            <select name="specialty" value={filters.specialty} onChange={handleChange}>
+              <option value="">Toutes les spécialités</option>
+              {specialties.map((specialty) => (
+                <option key={specialty.id} value={specialty.name}>
+                  {specialty.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
             <label>Localisation</label>
-            <input placeholder="Paris, Montreuil..." />
+            <input
+              name="city"
+              placeholder="Paris, Montreuil..."
+              value={filters.city}
+              onChange={handleChange}
+            />
           </div>
 
-          <div>
-            <label>Date</label>
-            <input type="date" />
-          </div>
-
-          <button type="button">Rechercher</button>
-        </div>
+          <button type="submit">Rechercher</button>
+        </form>
       </section>
+
+      {error && (
+        <div className="form-message error" role="alert">
+          {error}
+        </div>
+      )}
 
       <div className="results-heading">
         <div>
           <h2>Professionnels disponibles</h2>
-          <p>24 médecins correspondent à votre recherche.</p>
+          <p>
+            {isLoading
+              ? "Recherche en cours..."
+              : `${total} médecin${total > 1 ? "s" : ""} correspond${total > 1 ? "ent" : ""} à votre recherche.`}
+          </p>
         </div>
-
-        <select defaultValue="availability">
-          <option value="availability">Disponibilité</option>
-          <option value="price">Prix croissant</option>
-          <option value="experience">Expérience</option>
-        </select>
       </div>
+
+      {!isLoading && doctors.length === 0 && !error && (
+        <p>Aucun médecin ne correspond à votre recherche.</p>
+      )}
 
       <section className="doctor-results">
         {doctors.map((doctor) => (
-          <article className="doctor-card" key={doctor.name}>
+          <article className="doctor-card" key={doctor.doctor_id}>
             <div className="doctor-card-profile">
-              <div className="large-avatar">{doctor.initials}</div>
+              <div className="large-avatar">
+                {getInitials(doctor.firstname, doctor.lastname)}
+              </div>
 
               <div>
-                <h3>{doctor.name}</h3>
-                <p>{doctor.specialty}</p>
-                <span>★★★★★ 4,9 · 126 avis</span>
+                <h3>{doctor.full_name}</h3>
+                <p>{doctor.specialty || "Spécialité non renseignée"}</p>
+                <span>
+                  {doctor.average_rating
+                    ? `★★★★★ ${doctor.average_rating} · ${doctor.review_count} avis`
+                    : "Aucun avis pour le moment"}
+                </span>
               </div>
             </div>
 
             <div className="doctor-card-information">
-              <p>📍 {doctor.location}</p>
-              <p>💼 {doctor.experience}</p>
-              <p className="availability-text">● {doctor.availability}</p>
+              <p>📍 {doctor.city || "Ville non renseignée"}</p>
+              {doctor.experience_years && (
+                <p>💼 {doctor.experience_years} ans d’expérience</p>
+              )}
             </div>
 
             <div className="doctor-card-action">
               <span>Consultation</span>
-              <strong>{doctor.price}</strong>
+              <strong>
+                {doctor.consultation_price
+                  ? `${Number(doctor.consultation_price)} €`
+                  : "—"}
+              </strong>
 
-              <Link to="/patient/reservation">
+              <Link to={`/patient/reservation/${doctor.doctor_id}`}>
                 Prendre rendez-vous
               </Link>
             </div>

@@ -3,6 +3,9 @@ const cors = require("cors");
 
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const doctorRoutes = require("./routes/doctorRoutes");
+const appointmentRoutes = require("./routes/appointmentRoutes");
+const specialtyRoutes = require("./routes/specialtyRoutes");
 
 const app = express();
 
@@ -32,6 +35,9 @@ const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/doctors", doctorRoutes);
+app.use("/api/appointments", appointmentRoutes);
+app.use("/api/specialties", specialtyRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

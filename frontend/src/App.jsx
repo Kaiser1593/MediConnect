@@ -77,7 +77,7 @@ function App() {
         />
 
         <Route
-          path="/patient/reservation"
+          path="/patient/reservation/:doctorId"
           element={
             <ProtectedRoute allowedRoles={["patient"]}>
               <AppointmentBooking />

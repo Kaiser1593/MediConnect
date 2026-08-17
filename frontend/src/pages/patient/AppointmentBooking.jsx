@@ -1,27 +1,163 @@
-import { useState } from "react";
-import DashboardLayout from "../../components/layout/DashboardLayout";
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
 
-const times = [
-  "09 h 00",
-  "09 h 30",
-  "10 h 00",
-  "11 h 30",
-  "14 h 00",
-  "14 h 30",
-  "15 h 30",
-  "16 h 00",
+import DashboardLayout from "../../components/layout/DashboardLayout";
+import api from "../../services/api";
+
+const menu = [
+  { label: "Tableau de bord", path: "/patient/dashboard", icon: "⌂" },
+  { label: "Rechercher un médecin", path: "/patient/medecins", icon: "＋" },
+  { label: "Mes rendez-vous", path: "/patient/rendez-vous", icon: "□" },
+  { label: "Mon profil", path: "/patient/profil", icon: "○" },
 ];
 
-function AppointmentBooking() {
-  const [selectedTime, setSelectedTime] = useState("14 h 30");
-  const [confirmed, setConfirmed] = useState(false);
+const REASON_LABELS = {
+  consultation: "Consultation générale",
+  "follow-up": "Consultation de suivi",
+  certificate: "Certificat médical",
+  urgent: "Douleur ou urgence relative",
+};
 
-  const menu = [
-    { label: "Tableau de bord", path: "/patient/dashboard", icon: "⌂" },
-    { label: "Rechercher un médecin", path: "/patient/medecins", icon: "＋" },
-    { label: "Mes rendez-vous", path: "/patient/rendez-vous", icon: "□" },
-    { label: "Mon profil", path: "/patient/profil", icon: "○" },
-  ];
+const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1);
+
+// Format local (pas toISOString) : évite un décalage de date selon le
+// fuseau horaire, contrairement à une conversion en UTC.
+const toIsoDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const formatTime = (time) => time.replace(":", " h ");
+
+function AppointmentBooking() {
+  const { doctorId } = useParams();
+
+  const dateOptions = useMemo(() => {
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date();
+      date.setDate(date.getDate() + index);
+
+      return {
+        iso: toIsoDate(date),
+        weekday: capitalize(date.toLocaleDateString("fr-FR", { weekday: "short" })),
+        day: date.getDate(),
+        month: capitalize(date.toLocaleDateString("fr-FR", { month: "short" })),
+      };
+    });
+  }, []);
+
+  const [doctor, setDoctor] = useState(null);
+  const [isLoadingDoctor, setIsLoadingDoctor] = useState(true);
+  const [doctorError, setDoctorError] = useState("");
+
+  const [selectedDate, setSelectedDate] = useState(dateOptions[0].iso);
+  const [slots, setSlots] = useState([]);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(true);
+  const [selectedTime, setSelectedTime] = useState(null);
+
+  const [reasonType, setReasonType] = useState("consultation");
+  const [note, setNote] = useState("");
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [confirmed, setConfirmed] = useState(null);
+
+  useEffect(() => {
+    const loadDoctor = async () => {
+      setIsLoadingDoctor(true);
+      setDoctorError("");
+
+      try {
+        const response = await api.get(`/doctors/${doctorId}`);
+        setDoctor(response.data.doctor);
+      } catch {
+        setDoctorError("Ce médecin est introuvable ou n'est plus disponible.");
+      } finally {
+        setIsLoadingDoctor(false);
+      }
+    };
+
+    loadDoctor();
+  }, [doctorId]);
+
+  useEffect(() => {
+    const loadSlots = async () => {
+      setIsLoadingSlots(true);
+      setSelectedTime(null);
+
+      try {
+        const response = await api.get(`/doctors/${doctorId}/availability`, {
+          params: { date: selectedDate },
+        });
+        setSlots(response.data.slots);
+      } catch {
+        setSlots([]);
+      } finally {
+        setIsLoadingSlots(false);
+      }
+    };
+
+    loadSlots();
+  }, [doctorId, selectedDate]);
+
+  const handleConfirm = async () => {
+    setSubmitError("");
+    setIsSubmitting(true);
+
+    const reason = note.trim()
+      ? `${REASON_LABELS[reasonType]} - ${note.trim()}`
+      : REASON_LABELS[reasonType];
+
+    try {
+      await api.post("/appointments", {
+        doctorId: Number(doctorId),
+        scheduledOn: selectedDate,
+        startTime: selectedTime,
+        reason,
+      });
+
+      setConfirmed({ date: selectedDate, time: selectedTime });
+    } catch (error) {
+      setSubmitError(
+        error.response?.data?.message ||
+          "La réservation a échoué. Veuillez réessayer.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isLoadingDoctor) {
+    return (
+      <DashboardLayout
+        role="Espace patient"
+        title="Réserver un rendez-vous"
+        subtitle="Choisissez une date et un horaire disponibles."
+        menu={menu}
+      >
+        <p className="route-loading">Chargement…</p>
+      </DashboardLayout>
+    );
+  }
+
+  if (doctorError || !doctor) {
+    return (
+      <DashboardLayout
+        role="Espace patient"
+        title="Réserver un rendez-vous"
+        subtitle="Choisissez une date et un horaire disponibles."
+        menu={menu}
+      >
+        <div className="form-message error" role="alert">
+          {doctorError}
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const selectedDateOption = dateOptions.find((option) => option.iso === selectedDate);
 
   return (
     <DashboardLayout
@@ -32,139 +168,156 @@ function AppointmentBooking() {
     >
       {confirmed && (
         <div className="booking-success">
-          Rendez-vous confirmé avec le Dr Sarah Martin pour le 12 août 2026 à{" "}
-          {selectedTime}.
+          Rendez-vous confirmé avec le {doctor.full_name} pour le{" "}
+          {capitalize(
+            new Date(`${confirmed.date}T00:00:00`).toLocaleDateString("fr-FR", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            }),
+          )}{" "}
+          à {formatTime(confirmed.time)}.
         </div>
       )}
 
-      <section className="booking-grid">
-        <article className="dashboard-panel">
-          <div className="booking-doctor">
-            <div className="large-avatar">SM</div>
+      {!confirmed && (
+        <section className="booking-grid">
+          <article className="dashboard-panel">
+            <div className="booking-doctor">
+              <div className="large-avatar">
+                {`${doctor.firstname[0]}${doctor.lastname[0]}`.toUpperCase()}
+              </div>
+
+              <div>
+                <h2>{doctor.full_name}</h2>
+                <p>{doctor.specialty || "Spécialité non renseignée"}</p>
+                <span>
+                  {doctor.average_rating
+                    ? `★★★★★ ${doctor.average_rating} · ${doctor.city || ""}`
+                    : doctor.city || ""}
+                </span>
+              </div>
+            </div>
+
+            <div className="booking-section">
+              <h3>1. Sélectionnez une date</h3>
+
+              <div className="date-cards">
+                {dateOptions.map((option) => (
+                  <button
+                    type="button"
+                    key={option.iso}
+                    className={selectedDate === option.iso ? "selected" : ""}
+                    onClick={() => setSelectedDate(option.iso)}
+                  >
+                    <span>{option.weekday}</span>
+                    <strong>{option.day}</strong>
+                    <small>{option.month}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="booking-section">
+              <h3>2. Sélectionnez un horaire</h3>
+
+              {isLoadingSlots ? (
+                <p>Chargement des créneaux…</p>
+              ) : slots.length === 0 ? (
+                <p>Aucun créneau disponible à cette date.</p>
+              ) : (
+                <div className="time-grid">
+                  {slots.map((time) => (
+                    <button
+                      type="button"
+                      key={time}
+                      className={selectedTime === time ? "selected" : ""}
+                      onClick={() => setSelectedTime(time)}
+                    >
+                      {formatTime(time)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="booking-section">
+              <h3>3. Motif de consultation</h3>
+
+              <select value={reasonType} onChange={(event) => setReasonType(event.target.value)}>
+                <option value="consultation">Consultation générale</option>
+                <option value="follow-up">Consultation de suivi</option>
+                <option value="certificate">Certificat médical</option>
+                <option value="urgent">Douleur ou urgence relative</option>
+              </select>
+
+              <textarea
+                placeholder="Vous pouvez apporter des précisions au médecin..."
+                rows="4"
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+              />
+            </div>
+          </article>
+
+          <aside className="dashboard-panel booking-summary">
+            <h2>Résumé du rendez-vous</h2>
 
             <div>
-              <h2>Dr Sarah Martin</h2>
-              <p>Médecin généraliste</p>
-              <span>★★★★★ 4,9 · Paris 11e</span>
+              <span>Professionnel</span>
+              <strong>{doctor.full_name}</strong>
             </div>
-          </div>
 
-          <div className="booking-section">
-            <h3>1. Sélectionnez une date</h3>
-
-            <div className="date-cards">
-              <button type="button">
-                <span>Lun.</span>
-                <strong>10</strong>
-                <small>Août</small>
-              </button>
-
-              <button type="button">
-                <span>Mar.</span>
-                <strong>11</strong>
-                <small>Août</small>
-              </button>
-
-              <button type="button" className="selected">
-                <span>Mer.</span>
-                <strong>12</strong>
-                <small>Août</small>
-              </button>
-
-              <button type="button">
-                <span>Jeu.</span>
-                <strong>13</strong>
-                <small>Août</small>
-              </button>
-
-              <button type="button">
-                <span>Ven.</span>
-                <strong>14</strong>
-                <small>Août</small>
-              </button>
+            <div>
+              <span>Spécialité</span>
+              <strong>{doctor.specialty || "—"}</strong>
             </div>
-          </div>
 
-          <div className="booking-section">
-            <h3>2. Sélectionnez un horaire</h3>
-
-            <div className="time-grid">
-              {times.map((time) => (
-                <button
-                  type="button"
-                  key={time}
-                  className={selectedTime === time ? "selected" : ""}
-                  onClick={() => setSelectedTime(time)}
-                >
-                  {time}
-                </button>
-              ))}
+            <div>
+              <span>Date</span>
+              <strong>
+                {selectedDateOption
+                  ? `${selectedDateOption.day} ${selectedDateOption.month}`
+                  : "—"}
+              </strong>
             </div>
-          </div>
 
-          <div className="booking-section">
-            <h3>3. Motif de consultation</h3>
+            <div>
+              <span>Horaire</span>
+              <strong>{selectedTime ? formatTime(selectedTime) : "—"}</strong>
+            </div>
 
-            <select defaultValue="consultation">
-              <option value="consultation">Consultation générale</option>
-              <option value="follow-up">Consultation de suivi</option>
-              <option value="certificate">Certificat médical</option>
-              <option value="urgent">Douleur ou urgence relative</option>
-            </select>
+            <div>
+              <span>Lieu</span>
+              <strong>{doctor.city || "—"}</strong>
+            </div>
 
-            <textarea
-              placeholder="Vous pouvez apporter des précisions au médecin..."
-              rows="4"
-            />
-          </div>
-        </article>
+            <div>
+              <span>Tarif</span>
+              <strong>
+                {doctor.consultation_price ? `${Number(doctor.consultation_price)} €` : "—"}
+              </strong>
+            </div>
 
-        <aside className="dashboard-panel booking-summary">
-          <h2>Résumé du rendez-vous</h2>
+            {submitError && (
+              <div className="form-message error" role="alert">
+                {submitError}
+              </div>
+            )}
 
-          <div>
-            <span>Professionnel</span>
-            <strong>Dr Sarah Martin</strong>
-          </div>
+            <button
+              type="button"
+              className="primary-dashboard-button"
+              onClick={handleConfirm}
+              disabled={!selectedTime || isSubmitting}
+            >
+              {isSubmitting ? "Confirmation…" : "Confirmer le rendez-vous"}
+            </button>
 
-          <div>
-            <span>Spécialité</span>
-            <strong>Médecin généraliste</strong>
-          </div>
-
-          <div>
-            <span>Date</span>
-            <strong>12 août 2026</strong>
-          </div>
-
-          <div>
-            <span>Horaire</span>
-            <strong>{selectedTime}</strong>
-          </div>
-
-          <div>
-            <span>Lieu</span>
-            <strong>Paris 11e</strong>
-          </div>
-
-          <div>
-            <span>Tarif</span>
-            <strong>30 €</strong>
-          </div>
-
-          <button
-            type="button"
-            className="primary-dashboard-button"
-            onClick={() => setConfirmed(true)}
-          >
-            Confirmer le rendez-vous
-          </button>
-
-          <p>
-            Aucun paiement ne sera effectué lors de la réservation.
-          </p>
-        </aside>
-      </section>
+            <p>Aucun paiement ne sera effectué lors de la réservation.</p>
+          </aside>
+        </section>
+      )}
     </DashboardLayout>
   );
 }
