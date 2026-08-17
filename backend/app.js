@@ -27,6 +27,11 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+const { notFound, errorHandler } = require("./middleware/errorMiddleware");
+
 app.use("/api/auth", authRoutes);
+
+app.use(notFound);
+app.use(errorHandler);
 
 module.exports = app;
