@@ -1,5 +1,5 @@
 import { useState } from "react";
-import DemoLayout from "../../components/layout/DemoLayout";
+import DashboardLayout from "../../components/layout/DashboardLayout";
 
 const times = [
   "09 h 00",
@@ -24,7 +24,7 @@ function AppointmentBooking() {
   ];
 
   return (
-    <DemoLayout
+    <DashboardLayout
       role="Espace patient"
       title="Réserver un rendez-vous"
       subtitle="Choisissez une date et un horaire disponibles."
@@ -165,7 +165,7 @@ function AppointmentBooking() {
           </p>
         </aside>
       </section>
-    </DemoLayout>
+    </DashboardLayout>
   );
 }
 

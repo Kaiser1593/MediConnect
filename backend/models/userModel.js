@@ -20,11 +20,16 @@ const findByEmail = async (email) => {
 
 // Recherche par identifiant, SANS le hash du mot de passe.
 // C'est cette version qu'on utilise partout ailleurs.
+// La jointure avec doctors expose is_approved : le front s'en sert
+// pour avertir un médecin dont le compte n'est pas encore validé.
+// NULL pour les patients et les administrateurs, qui n'ont pas de fiche doctors.
 const findById = async (id) => {
   const [rows] = await pool.query(
-    `SELECT id, firstname, lastname, email, role, phone, is_active, created_at
-     FROM users
-     WHERE id = ?
+    `SELECT u.id, u.firstname, u.lastname, u.email, u.role, u.phone,
+            u.is_active, u.created_at, d.is_approved
+     FROM users u
+     LEFT JOIN doctors d ON d.user_id = u.id
+     WHERE u.id = ?
      LIMIT 1`,
     [id],
   );

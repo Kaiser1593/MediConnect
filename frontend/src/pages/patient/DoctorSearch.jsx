@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import DemoLayout from "../../components/layout/DemoLayout";
+import DashboardLayout from "../../components/layout/DashboardLayout";
 
 const doctors = [
   {
@@ -49,7 +49,7 @@ function DoctorSearch() {
   ];
 
   return (
-    <DemoLayout
+    <DashboardLayout
       role="Espace patient"
       title="Rechercher un médecin"
       subtitle="Trouvez rapidement un professionnel de santé."
@@ -119,7 +119,7 @@ function DoctorSearch() {
           </article>
         ))}
       </section>
-    </DemoLayout>
+    </DashboardLayout>
   );
 }
 

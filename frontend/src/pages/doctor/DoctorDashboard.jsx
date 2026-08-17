@@ -1,4 +1,5 @@
-import DemoLayout from "../../components/layout/DemoLayout";
+import DashboardLayout from "../../components/layout/DashboardLayout";
+import useAuth from "../../hooks/useAuth";
 
 const appointments = [
   {
@@ -28,6 +29,8 @@ const appointments = [
 ];
 
 function DoctorDashboard() {
+  const { user } = useAuth();
+
   const menu = [
     { label: "Tableau de bord", path: "/doctor/dashboard", icon: "⌂" },
     { label: "Mon agenda", path: "/doctor/agenda", icon: "□" },
@@ -37,12 +40,25 @@ function DoctorDashboard() {
   ];
 
   return (
-    <DemoLayout
+    <DashboardLayout
       role="Espace médecin"
       title="Tableau de bord médecin"
       subtitle="Gérez votre activité et vos rendez-vous."
       menu={menu}
     >
+      {!user.is_approved && (
+        <div className="approval-banner">
+          <span className="approval-banner-icon">!</span>
+          <div>
+            <strong>Compte en attente de validation</strong>
+            <span>
+              Un administrateur doit valider votre compte avant qu'il
+              n'apparaisse dans les résultats de recherche des patients.
+            </span>
+          </div>
+        </div>
+      )}
+
       <section className="dashboard-statistics">
         <article className="stat-card">
           <div className="stat-icon">□</div>
@@ -177,7 +193,7 @@ function DoctorDashboard() {
           </button>
         </aside>
       </section>
-    </DemoLayout>
+    </DashboardLayout>
   );
 }
 

@@ -27,10 +27,20 @@ const appointments = [
 
 function PatientDashboard() {
   const { user } = useAuth();
+
+  const menu = [
+    { label: "Tableau de bord", path: "/patient/dashboard", icon: "⌂" },
+    { label: "Rechercher un médecin", path: "/patient/medecins", icon: "＋" },
+    { label: "Mes rendez-vous", path: "/patient/rendez-vous", icon: "□" },
+    { label: "Mon profil", path: "/patient/profil", icon: "○" },
+  ];
+
   return (
     <DashboardLayout
+      role="Espace patient"
       title={`Bonjour ${user.firstname} 👋`}
       subtitle="Voici un aperçu de votre espace personnel."
+      menu={menu}
     >
       <section className="dashboard-statistics">
         <article className="stat-card">

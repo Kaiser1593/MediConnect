@@ -1,4 +1,6 @@
-// src/components/layout/DemoLayout.jsx
+// src/components/layout/DashboardLayout.jsx
+// Layout commun aux trois espaces protégés (patient, médecin, administrateur).
+// La sidebar affiche le menu et le rôle passés en props par la page appelante.
 
 import { Link, NavLink, useNavigate } from "react-router-dom";
 
@@ -13,7 +15,7 @@ const ROLE_LABELS = {
   admin: "Administrateur",
 };
 
-function DemoLayout({ role, title, subtitle, menu, children }) {
+function DashboardLayout({ role, title, subtitle, menu, children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -86,4 +88,4 @@ function DemoLayout({ role, title, subtitle, menu, children }) {
   );
 }
 
-export default DemoLayout;
+export default DashboardLayout;
