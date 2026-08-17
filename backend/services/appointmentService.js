@@ -35,6 +35,8 @@ const makeError = (message, statusCode) => {
   return error;
 };
 
+const getTodayIso = () => new Date().toISOString().slice(0, 10);
+
 // Calcule les créneaux libres d'un médecin pour une date donnée, en
 // croisant ses horaires récurrents avec les rendez-vous déjà pris.
 const computeAvailableSlots = async (doctor, dateStr) => {
@@ -42,7 +44,7 @@ const computeAvailableSlots = async (doctor, dateStr) => {
     throw makeError("La date doit être au format AAAA-MM-JJ.", 400);
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getTodayIso();
 
   if (dateStr < today) {
     return [];
@@ -130,4 +132,47 @@ const bookAppointment = async ({
   });
 };
 
-module.exports = { computeAvailableSlots, bookAppointment };
+// Données du tableau de bord patient : rendez-vous à venir + statistiques.
+const getPatientDashboard = async (userId) => {
+  const patient = await patientModel.findByUserId(userId);
+
+  if (!patient) {
+    throw makeError("Fiche patient introuvable.", 404);
+  }
+
+  const today = getTodayIso();
+
+  const [stats, appointments] = await Promise.all([
+    appointmentModel.getPatientStats(patient.id, today),
+    appointmentModel.getPatientAppointments(patient.id, today, 5),
+  ]);
+
+  return { stats, appointments };
+};
+
+// Données du tableau de bord médecin : rendez-vous du jour, statistiques
+// et horaires récurrents (utile même si le compte n'est pas encore validé).
+const getDoctorDashboard = async (userId) => {
+  const doctor = await doctorModel.findByUserId(userId);
+
+  if (!doctor) {
+    throw makeError("Fiche médecin introuvable.", 404);
+  }
+
+  const today = getTodayIso();
+
+  const [stats, appointments, availabilities] = await Promise.all([
+    appointmentModel.getDoctorStats(doctor.id, today),
+    appointmentModel.getDoctorTodayAppointments(doctor.id, today),
+    doctorModel.getWeeklyAvailabilities(doctor.id),
+  ]);
+
+  return { stats, appointments, availabilities };
+};
+
+module.exports = {
+  computeAvailableSlots,
+  bookAppointment,
+  getPatientDashboard,
+  getDoctorDashboard,
+};

@@ -1,39 +1,69 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import useAuth from "../../hooks/useAuth";
+import api from "../../services/api";
 
-const appointments = [
-  {
-    doctor: "Dr Sarah Martin",
-    specialty: "Médecin généraliste",
-    date: "12 août 2026",
-    time: "14 h 30",
-    status: "Confirmé",
-  },
-  {
-    doctor: "Dr Lucas Bernard",
-    specialty: "Dermatologue",
-    date: "18 août 2026",
-    time: "10 h 00",
-    status: "En attente",
-  },
-  {
-    doctor: "Dr Emma Robert",
-    specialty: "Ophtalmologue",
-    date: "25 août 2026",
-    time: "16 h 15",
-    status: "Confirmé",
-  },
+const menu = [
+  { label: "Tableau de bord", path: "/patient/dashboard", icon: "⌂" },
+  { label: "Rechercher un médecin", path: "/patient/medecins", icon: "＋" },
+  { label: "Mes rendez-vous", path: "/patient/rendez-vous", icon: "□" },
+  { label: "Mon profil", path: "/patient/profil", icon: "○" },
 ];
+
+const STATUS_LABELS = {
+  pending: "En attente",
+  confirmed: "Confirmé",
+  completed: "Terminé",
+  cancelled: "Annulé",
+};
+
+const formatDate = (isoDate) =>
+  new Date(isoDate).toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+const formatTime = (time) => time.slice(0, 5).replace(":", " h ");
+
+const daysUntil = (isoDate) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(isoDate);
+  target.setHours(0, 0, 0, 0);
+  return Math.round((target - today) / (1000 * 60 * 60 * 24));
+};
 
 function PatientDashboard() {
   const { user } = useAuth();
 
-  const menu = [
-    { label: "Tableau de bord", path: "/patient/dashboard", icon: "⌂" },
-    { label: "Rechercher un médecin", path: "/patient/medecins", icon: "＋" },
-    { label: "Mes rendez-vous", path: "/patient/rendez-vous", icon: "□" },
-    { label: "Mon profil", path: "/patient/profil", icon: "○" },
-  ];
+  const [stats, setStats] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const response = await api.get("/appointments/me");
+        setStats(response.data.stats);
+        setAppointments(response.data.appointments);
+      } catch {
+        setError("Impossible de charger vos rendez-vous.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDashboard();
+  }, []);
+
+  const nextAppointment = appointments[0] || null;
 
   return (
     <DashboardLayout
@@ -42,140 +72,150 @@ function PatientDashboard() {
       subtitle="Voici un aperçu de votre espace personnel."
       menu={menu}
     >
-      <section className="dashboard-statistics">
-        <article className="stat-card">
-          <div className="stat-icon">□</div>
-          <div>
-            <span>Rendez-vous à venir</span>
-            <strong>3</strong>
-            <p>Deux confirmés</p>
-          </div>
-        </article>
+      {error && (
+        <div className="form-message error" role="alert">
+          {error}
+        </div>
+      )}
 
-        <article className="stat-card">
-          <div className="stat-icon">✓</div>
-          <div>
-            <span>Consultations terminées</span>
-            <strong>8</strong>
-            <p>Depuis janvier 2026</p>
-          </div>
-        </article>
-
-        <article className="stat-card">
-          <div className="stat-icon">♡</div>
-          <div>
-            <span>Médecins favoris</span>
-            <strong>4</strong>
-            <p>Professionnels enregistrés</p>
-          </div>
-        </article>
-
-        <article className="stat-card">
-          <div className="stat-icon">!</div>
-          <div>
-            <span>Documents disponibles</span>
-            <strong>6</strong>
-            <p>Ordonnances et comptes rendus</p>
-          </div>
-        </article>
-      </section>
-
-      <section className="dashboard-grid">
-        <article className="dashboard-panel appointments-panel">
-          <div className="panel-heading">
-            <div>
-              <h2>Prochains rendez-vous</h2>
-              <p>Vos consultations médicales planifiées.</p>
-            </div>
-
-            <button type="button" className="outline-button">
-              Voir tous
-            </button>
-          </div>
-
-          <div className="appointment-list">
-            {appointments.map((appointment) => (
-              <div
-                className="appointment-row"
-                key={`${appointment.doctor}-${appointment.date}`}
-              >
-                <div className="appointment-doctor">
-                  <div className="small-avatar">
-                    {appointment.doctor
-                      .replace("Dr ", "")
-                      .split(" ")
-                      .map((word) => word[0])
-                      .join("")}
-                  </div>
-
-                  <div>
-                    <strong>{appointment.doctor}</strong>
-                    <span>{appointment.specialty}</span>
-                  </div>
-                </div>
-
-                <div className="appointment-date">
-                  <strong>{appointment.date}</strong>
-                  <span>{appointment.time}</span>
-                </div>
-
-                <span
-                  className={`status-badge ${
-                    appointment.status === "Confirmé"
-                      ? "confirmed"
-                      : "pending"
-                  }`}
-                >
-                  {appointment.status}
-                </span>
-
-                <button type="button" className="more-button">
-                  •••
-                </button>
+      {isLoading ? (
+        <p className="route-loading">Chargement…</p>
+      ) : (
+        <>
+          <section className="dashboard-statistics">
+            <article className="stat-card">
+              <div className="stat-icon">□</div>
+              <div>
+                <span>Rendez-vous à venir</span>
+                <strong>{stats.upcoming}</strong>
+                <p>Sur {stats.total} au total</p>
               </div>
-            ))}
-          </div>
-        </article>
+            </article>
 
-        <aside className="dashboard-panel next-appointment">
-          <div className="panel-heading">
-            <div>
-              <h2>Prochain rendez-vous</h2>
-              <p>Dans 4 jours</p>
-            </div>
-          </div>
+            <article className="stat-card">
+              <div className="stat-icon">✓</div>
+              <div>
+                <span>Consultations terminées</span>
+                <strong>{stats.completed}</strong>
+                <p>Toutes périodes confondues</p>
+              </div>
+            </article>
 
-          <div className="next-doctor">
-            <div className="large-avatar">SM</div>
+            <article className="stat-card">
+              <div className="stat-icon">!</div>
+              <div>
+                <span>Rendez-vous annulés</span>
+                <strong>{stats.cancelled}</strong>
+                <p>Toutes périodes confondues</p>
+              </div>
+            </article>
 
-            <div>
-              <h3>Dr Sarah Martin</h3>
-              <p>Médecin généraliste</p>
-            </div>
-          </div>
+            <article className="stat-card">
+              <div className="stat-icon">♡</div>
+              <div>
+                <span>Total des rendez-vous</span>
+                <strong>{stats.total}</strong>
+                <p>Depuis la création du compte</p>
+              </div>
+            </article>
+          </section>
 
-          <div className="next-details">
-            <div>
-              <span>Date</span>
-              <strong>12 août 2026</strong>
-            </div>
+          <section className="dashboard-grid">
+            <article className="dashboard-panel appointments-panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Prochains rendez-vous</h2>
+                  <p>Vos consultations médicales planifiées.</p>
+                </div>
+              </div>
 
-            <div>
-              <span>Horaire</span>
-              <strong>14 h 30</strong>
-            </div>
+              {appointments.length === 0 ? (
+                <p>Aucun rendez-vous à venir pour le moment.</p>
+              ) : (
+                <div className="appointment-list">
+                  {appointments.map((appointment) => (
+                    <div className="appointment-row" key={appointment.id}>
+                      <div className="appointment-doctor">
+                        <div className="small-avatar">
+                          {`${appointment.firstname[0]}${appointment.lastname[0]}`.toUpperCase()}
+                        </div>
 
-            <div>
-              <span>Adresse</span>
-              <strong>Paris 11e</strong>
-            </div>
-          </div>
+                        <div>
+                          <strong>{appointment.doctor_name}</strong>
+                          <span>{appointment.specialty || "Spécialité non renseignée"}</span>
+                        </div>
+                      </div>
 
-          <button type="button" className="primary-dashboard-button">
-            Voir le rendez-vous
-          </button>
-        </aside>
-      </section>
+                      <div className="appointment-date">
+                        <strong>{formatDate(appointment.scheduled_on)}</strong>
+                        <span>{formatTime(appointment.start_time)}</span>
+                      </div>
+
+                      <span
+                        className={`status-badge ${
+                          appointment.status === "confirmed" ? "confirmed" : "pending"
+                        }`}
+                      >
+                        {STATUS_LABELS[appointment.status]}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </article>
+
+            <aside className="dashboard-panel next-appointment">
+              <div className="panel-heading">
+                <div>
+                  <h2>Prochain rendez-vous</h2>
+                  <p>
+                    {nextAppointment
+                      ? daysUntil(nextAppointment.scheduled_on) === 0
+                        ? "Aujourd’hui"
+                        : `Dans ${daysUntil(nextAppointment.scheduled_on)} jour${
+                            daysUntil(nextAppointment.scheduled_on) > 1 ? "s" : ""
+                          }`
+                      : "Aucun rendez-vous prévu"}
+                  </p>
+                </div>
+              </div>
+
+              {nextAppointment ? (
+                <>
+                  <div className="next-doctor">
+                    <div className="large-avatar">
+                      {`${nextAppointment.firstname[0]}${nextAppointment.lastname[0]}`.toUpperCase()}
+                    </div>
+
+                    <div>
+                      <h3>{nextAppointment.doctor_name}</h3>
+                      <p>{nextAppointment.specialty || "Spécialité non renseignée"}</p>
+                    </div>
+                  </div>
+
+                  <div className="next-details">
+                    <div>
+                      <span>Date</span>
+                      <strong>{formatDate(nextAppointment.scheduled_on)}</strong>
+                    </div>
+
+                    <div>
+                      <span>Horaire</span>
+                      <strong>{formatTime(nextAppointment.start_time)}</strong>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <p>Prenez rendez-vous avec un professionnel de santé.</p>
+              )}
+
+              <Link to="/patient/medecins" className="primary-dashboard-button">
+                Rechercher un médecin
+              </Link>
+            </aside>
+          </section>
+        </>
+      )}
 
       <section className="dashboard-panel quick-actions-panel">
         <div className="panel-heading">
@@ -186,11 +226,11 @@ function PatientDashboard() {
         </div>
 
         <div className="quick-actions">
-          <button type="button">
+          <Link to="/patient/medecins">
             <span>＋</span>
             <strong>Prendre rendez-vous</strong>
             <small>Rechercher un professionnel</small>
-          </button>
+          </Link>
 
           <button type="button">
             <span>□</span>

@@ -1070,11 +1070,13 @@
   width: 100%;
   margin-top: 18px;
   padding: 13px;
+  display: block;
   color: #ffffff;
   background: #3478f6;
   border: none;
   border-radius: 9px;
   font-weight: 700;
+  text-align: center;
 }
 
 .quick-actions-panel {
@@ -1087,7 +1089,8 @@
   gap: 16px;
 }
 
-.quick-actions button {
+.quick-actions button,
+.quick-actions a {
   padding: 20px;
   display: flex;
   flex-direction: column;

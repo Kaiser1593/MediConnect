@@ -80,6 +80,18 @@ const getPublicById = async (doctorId) => {
   return rows[0] || null;
 };
 
+// Résout la fiche médecin à partir de users.id (celui du token).
+// Contrairement à getPublicById, ne filtre pas sur is_approved :
+// un médecin doit voir son propre tableau de bord même en attente de validation.
+const findByUserId = async (userId) => {
+  const [rows] = await pool.query(
+    "SELECT id, user_id, slot_duration, is_approved FROM doctors WHERE user_id = ? LIMIT 1",
+    [userId],
+  );
+
+  return rows[0] || null;
+};
+
 // Horaires récurrents hebdomadaires d'un médecin.
 const getWeeklyAvailabilities = async (doctorId) => {
   const [rows] = await pool.query(
@@ -111,6 +123,7 @@ const getBookedStartTimes = async (doctorId, scheduledOn) => {
 module.exports = {
   searchPublic,
   getPublicById,
+  findByUserId,
   getWeeklyAvailabilities,
   getBookedStartTimes,
 };

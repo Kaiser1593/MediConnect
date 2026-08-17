@@ -31,4 +31,17 @@ const createAppointment = async (req, res, next) => {
   }
 };
 
-module.exports = { createAppointment };
+const getMyDashboard = async (req, res, next) => {
+  try {
+    const data =
+      req.user.role === "doctor"
+        ? await appointmentService.getDoctorDashboard(req.user.id)
+        : await appointmentService.getPatientDashboard(req.user.id);
+
+    return res.status(200).json({ success: true, ...data });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+module.exports = { createAppointment, getMyDashboard };
