@@ -48,6 +48,14 @@ function AgendaRow({
   const canCancel =
     appointment.status === "pending" || appointment.status === "confirmed";
   const isBusy = isCancelling || isConfirming || isCompleting;
+  // Marquer une consultation "terminée" n'a de sens qu'une fois qu'elle a
+  // vraiment eu lieu : comparer uniquement la date ne suffit pas, un
+  // rendez-vous prévu plus tard aujourd'hui n'a pas encore eu lieu.
+  const appointmentDateTime = new Date(
+    `${appointment.scheduled_on.slice(0, 10)}T${appointment.start_time}`,
+  );
+  const canComplete =
+    appointment.status === "confirmed" && appointmentDateTime <= new Date();
 
   return (
     <div className="doctor-appointment-row">
@@ -85,7 +93,7 @@ function AgendaRow({
           </button>
         )}
 
-        {appointment.status === "confirmed" && (
+        {canComplete && (
           <button
             type="button"
             className="outline-button"
@@ -186,19 +194,19 @@ function MyAgenda() {
   };
 
   const handleComplete = async (appointmentId) => {
+    // "Annuler" sur cette fenêtre ne doit annuler que la saisie de la
+    // note, jamais la clôture elle-même : c'est un ajout facultatif.
     const doctorNotes = window.prompt(
       "Compte rendu (facultatif, visible de vous seul) :",
       "",
     );
-
-    if (doctorNotes === null) return;
 
     setCompletingId(appointmentId);
     setError("");
 
     try {
       await api.patch(`/appointments/${appointmentId}/complete`, {
-        doctorNotes,
+        doctorNotes: doctorNotes || undefined,
       });
       setAppointments((previous) =>
         previous.map((appointment) =>

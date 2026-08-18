@@ -292,6 +292,20 @@ const completeAppointment = async (user, appointmentId, doctorNotes) => {
     );
   }
 
+  // Le frontend masque déjà cette action pour un rendez-vous futur, mais
+  // on ne fait jamais confiance au client seul. Comparer uniquement la
+  // date ne suffit pas : un rendez-vous plus tard aujourd'hui n'a pas
+  // encore eu lieu.
+  const scheduledOn = appointment.scheduled_on.toISOString().slice(0, 10);
+  const appointmentDateTime = new Date(`${scheduledOn}T${appointment.start_time}`);
+
+  if (appointmentDateTime > new Date()) {
+    throw makeError(
+      "Un rendez-vous à venir ne peut pas être marqué comme terminé.",
+      400,
+    );
+  }
+
   await appointmentModel.complete(appointmentId, doctorNotes);
 };
 
