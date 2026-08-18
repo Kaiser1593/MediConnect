@@ -92,10 +92,83 @@ const findByUserId = async (userId) => {
   return rows[0] || null;
 };
 
+// Profil complet du médecin connecté, pour la page "Mon profil".
+// Contrairement à getPublicById, inclut specialty_id (utile pour
+// pré-remplir le <select>) et ne filtre pas sur is_approved.
+const getOwnProfile = async (userId) => {
+  const [rows] = await pool.query(
+    `SELECT d.id, u.firstname, u.lastname, u.email, u.phone,
+            d.specialty_id, d.license_number, d.biography, d.address,
+            d.city, d.postal_code, d.consultation_price, d.experience_years,
+            d.slot_duration, d.is_approved
+     FROM doctors d
+     JOIN users u ON u.id = d.user_id
+     WHERE u.id = ?
+     LIMIT 1`,
+    [userId],
+  );
+
+  return rows[0] || null;
+};
+
+// Met à jour le compte (users) et la fiche médecin (doctors) ensemble.
+const updateOwnProfile = async (
+  userId,
+  {
+    firstname,
+    lastname,
+    phone,
+    specialtyId,
+    licenseNumber,
+    biography,
+    address,
+    city,
+    postalCode,
+    consultationPrice,
+    experienceYears,
+  },
+) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    await connection.query(
+      "UPDATE users SET firstname = ?, lastname = ?, phone = ? WHERE id = ?",
+      [firstname, lastname, phone || null, userId],
+    );
+
+    await connection.query(
+      `UPDATE doctors
+       SET specialty_id = ?, license_number = ?, biography = ?, address = ?,
+           city = ?, postal_code = ?, consultation_price = ?, experience_years = ?
+       WHERE user_id = ?`,
+      [
+        specialtyId || null,
+        licenseNumber || null,
+        biography || null,
+        address || null,
+        city || null,
+        postalCode || null,
+        consultationPrice || null,
+        experienceYears || null,
+        userId,
+      ],
+    );
+
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+};
+
 // Horaires récurrents hebdomadaires d'un médecin.
 const getWeeklyAvailabilities = async (doctorId) => {
   const [rows] = await pool.query(
-    `SELECT weekday, start_time, end_time
+    `SELECT id, weekday, start_time, end_time
      FROM doctor_availabilities
      WHERE doctor_id = ?
      ORDER BY weekday, start_time`,
@@ -103,6 +176,27 @@ const getWeeklyAvailabilities = async (doctorId) => {
   );
 
   return rows;
+};
+
+const addAvailability = async (doctorId, { weekday, startTime, endTime }) => {
+  const [result] = await pool.query(
+    `INSERT INTO doctor_availabilities (doctor_id, weekday, start_time, end_time)
+     VALUES (?, ?, ?, ?)`,
+    [doctorId, weekday, startTime, endTime],
+  );
+
+  return { id: result.insertId, weekday, startTime, endTime };
+};
+
+// La condition sur doctor_id garantit qu'un médecin ne peut supprimer
+// qu'un créneau qui lui appartient.
+const deleteAvailability = async (id, doctorId) => {
+  const [result] = await pool.query(
+    "DELETE FROM doctor_availabilities WHERE id = ? AND doctor_id = ?",
+    [id, doctorId],
+  );
+
+  return result.affectedRows > 0;
 };
 
 // Créneaux déjà pris pour un médecin à une date donnée.
@@ -124,6 +218,10 @@ module.exports = {
   searchPublic,
   getPublicById,
   findByUserId,
+  getOwnProfile,
+  updateOwnProfile,
   getWeeklyAvailabilities,
+  addAvailability,
+  deleteAvailability,
   getBookedStartTimes,
 };

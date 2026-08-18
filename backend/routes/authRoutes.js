@@ -6,6 +6,7 @@ const {
   registerUser,
   loginUser,
   getCurrentUser,
+  changePassword,
 } = require("../controllers/authController");
 
 const { protect } = require("../middleware/authMiddleware");
@@ -17,5 +18,6 @@ router.post("/login", loginUser);
 
 // Route protégée : nécessite un token valide.
 router.get("/me", protect, getCurrentUser);
+router.patch("/password", protect, changePassword);
 
 module.exports = router;

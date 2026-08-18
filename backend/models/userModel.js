@@ -37,6 +37,23 @@ const findById = async (id) => {
   return rows[0] || null;
 };
 
+// Utilisé pour vérifier le mot de passe actuel avant de le changer.
+const findPasswordHashById = async (id) => {
+  const [rows] = await pool.query(
+    "SELECT password_hash FROM users WHERE id = ? LIMIT 1",
+    [id],
+  );
+
+  return rows[0] || null;
+};
+
+const updatePassword = async (id, passwordHash) => {
+  await pool.query("UPDATE users SET password_hash = ? WHERE id = ?", [
+    passwordHash,
+    id,
+  ]);
+};
+
 const emailExists = async (email) => {
   const [rows] = await pool.query(
     "SELECT id FROM users WHERE email = ? LIMIT 1",
@@ -100,6 +117,8 @@ const createWithProfile = async ({
 module.exports = {
   findByEmail,
   findById,
+  findPasswordHashById,
+  updatePassword,
   emailExists,
   createWithProfile,
 };

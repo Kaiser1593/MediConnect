@@ -251,6 +251,17 @@ const cancelAppointment = async (user, appointmentId) => {
   await appointmentModel.cancel(appointmentId);
 };
 
+// Patients distincts d'un médecin, pour la page "Mes patients".
+const listMyPatients = async (userId) => {
+  const doctor = await doctorModel.findByUserId(userId);
+
+  if (!doctor) {
+    throw makeError("Fiche médecin introuvable.", 404);
+  }
+
+  return appointmentModel.getDistinctPatientsForDoctor(doctor.id);
+};
+
 module.exports = {
   computeAvailableSlots,
   bookAppointment,
@@ -258,4 +269,5 @@ module.exports = {
   getDoctorDashboard,
   listMyAppointments,
   cancelAppointment,
+  listMyPatients,
 };

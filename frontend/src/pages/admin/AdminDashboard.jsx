@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import api from "../../services/api";
@@ -215,6 +216,10 @@ function AdminDashboard() {
                 <h2>Médecins en attente de validation</h2>
                 <p>Ces comptes n’apparaissent pas encore publiquement.</p>
               </div>
+
+              <Link to="/admin/medecins" className="outline-button">
+                Voir tous les médecins
+              </Link>
             </div>
 
             {pendingDoctors.length === 0 ? (
@@ -259,9 +264,9 @@ function AdminDashboard() {
                 <p>Comptes récemment créés sur MediConnect.</p>
               </div>
 
-              <button type="button" className="outline-button">
+              <Link to="/admin/utilisateurs" className="outline-button">
                 Gérer les utilisateurs
-              </button>
+              </Link>
             </div>
 
             <div className="admin-table">

@@ -228,6 +228,25 @@ const cancel = async (id) => {
   return result.affectedRows > 0;
 };
 
+// Patients distincts d'un médecin (page "Mes patients"), avec le nombre
+// de rendez-vous et la date du dernier, du plus récent au plus ancien.
+const getDistinctPatientsForDoctor = async (doctorId) => {
+  const [rows] = await pool.query(
+    `SELECT p.id AS patient_id, u.firstname, u.lastname, u.email, u.phone,
+            COUNT(a.id) AS appointment_count,
+            MAX(a.scheduled_on) AS last_appointment
+     FROM appointments a
+     JOIN patients p ON p.id = a.patient_id
+     JOIN users u    ON u.id = p.user_id
+     WHERE a.doctor_id = ?
+     GROUP BY p.id, u.firstname, u.lastname, u.email, u.phone
+     ORDER BY last_appointment DESC`,
+    [doctorId],
+  );
+
+  return rows;
+};
+
 module.exports = {
   create,
   findByDoctorSlot,
@@ -238,6 +257,7 @@ module.exports = {
   getDoctorTodayAppointments,
   getAllByPatientId,
   getAllByDoctorId,
+  getDistinctPatientsForDoctor,
   findById,
   cancel,
 };

@@ -217,6 +217,10 @@ function DoctorDashboard() {
                   );
                 })}
               </div>
+
+              <Link to="/doctor/disponibilites" className="primary-dashboard-button">
+                Modifier mes disponibilités
+              </Link>
             </aside>
           </section>
         </>

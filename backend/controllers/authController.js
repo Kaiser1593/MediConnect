@@ -159,8 +159,62 @@ const getCurrentUser = async (req, res, next) => {
   }
 };
 
+// Changement de mot de passe pour l'utilisateur connecté, quel que soit
+// son rôle : exige l'ancien mot de passe, comme toute page "Paramètres".
+const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Tous les champs sont obligatoires.",
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Le nouveau mot de passe doit contenir au moins 8 caractères.",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Les mots de passe ne correspondent pas.",
+      });
+    }
+
+    const record = await userModel.findPasswordHashById(req.user.id);
+
+    const currentMatches = await bcrypt.compare(
+      currentPassword,
+      record.password_hash,
+    );
+
+    if (!currentMatches) {
+      return res.status(401).json({
+        success: false,
+        message: "Le mot de passe actuel est incorrect.",
+      });
+    }
+
+    const newPasswordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    await userModel.updatePassword(req.user.id, newPasswordHash);
+
+    return res.status(200).json({
+      success: true,
+      message: "Votre mot de passe a été mis à jour.",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getCurrentUser,
+  changePassword,
 };

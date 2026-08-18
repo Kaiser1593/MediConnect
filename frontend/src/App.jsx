@@ -11,9 +11,18 @@ import PatientDashboard from "./pages/patient/PatientDashboard";
 import DoctorSearch from "./pages/patient/DoctorSearch";
 import AppointmentBooking from "./pages/patient/AppointmentBooking";
 import MyAppointments from "./pages/patient/MyAppointments";
+import PatientProfile from "./pages/patient/PatientProfile";
 import DoctorDashboard from "./pages/doctor/DoctorDashboard";
 import MyAgenda from "./pages/doctor/MyAgenda";
+import DoctorProfile from "./pages/doctor/DoctorProfile";
+import DoctorPatients from "./pages/doctor/DoctorPatients";
+import DoctorAvailabilities from "./pages/doctor/DoctorAvailabilities";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminDoctors from "./pages/admin/AdminDoctors";
+import AdminAppointments from "./pages/admin/AdminAppointments";
+import AdminStatistics from "./pages/admin/AdminStatistics";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 import "./App.css";
 
@@ -96,6 +105,15 @@ function App() {
           }
         />
 
+        <Route
+          path="/patient/profil"
+          element={
+            <ProtectedRoute allowedRoles={["patient"]}>
+              <PatientProfile />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Espace médecin */}
         <Route
           path="/doctor/dashboard"
@@ -115,12 +133,84 @@ function App() {
           }
         />
 
+        <Route
+          path="/doctor/profil"
+          element={
+            <ProtectedRoute allowedRoles={["doctor"]}>
+              <DoctorProfile />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/doctor/patients"
+          element={
+            <ProtectedRoute allowedRoles={["doctor"]}>
+              <DoctorPatients />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/doctor/disponibilites"
+          element={
+            <ProtectedRoute allowedRoles={["doctor"]}>
+              <DoctorAvailabilities />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Espace administrateur */}
         <Route
           path="/admin/dashboard"
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/utilisateurs"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminUsers />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/medecins"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminDoctors />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/rendez-vous"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminAppointments />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/statistiques"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminStatistics />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/parametres"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminSettings />
             </ProtectedRoute>
           }
         />

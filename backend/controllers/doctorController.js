@@ -79,4 +79,191 @@ const getDoctorAvailability = async (req, res, next) => {
   }
 };
 
-module.exports = { searchDoctors, getDoctorById, getDoctorAvailability };
+const getMyProfile = async (req, res, next) => {
+  try {
+    const profile = await doctorModel.getOwnProfile(req.user.id);
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: "Fiche médecin introuvable.",
+      });
+    }
+
+    return res.status(200).json({ success: true, profile });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const updateMyProfile = async (req, res, next) => {
+  try {
+    const {
+      firstname,
+      lastname,
+      phone,
+      specialtyId,
+      licenseNumber,
+      biography,
+      address,
+      city,
+      postalCode,
+      consultationPrice,
+      experienceYears,
+    } = req.body;
+
+    if (!firstname || !lastname) {
+      return res.status(400).json({
+        success: false,
+        message: "Le prénom et le nom sont obligatoires.",
+      });
+    }
+
+    await doctorModel.updateOwnProfile(req.user.id, {
+      firstname: firstname.trim(),
+      lastname: lastname.trim(),
+      phone,
+      specialtyId,
+      licenseNumber,
+      biography,
+      address,
+      city,
+      postalCode,
+      consultationPrice,
+      experienceYears,
+    });
+
+    const profile = await doctorModel.getOwnProfile(req.user.id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Votre profil a été mis à jour.",
+      profile,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const TIME_PATTERN = /^\d{2}:\d{2}(:\d{2})?$/;
+
+const getMyAvailabilities = async (req, res, next) => {
+  try {
+    const doctor = await doctorModel.findByUserId(req.user.id);
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Fiche médecin introuvable.",
+      });
+    }
+
+    const availabilities = await doctorModel.getWeeklyAvailabilities(doctor.id);
+
+    return res.status(200).json({ success: true, availabilities });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const addMyAvailability = async (req, res, next) => {
+  try {
+    const { weekday, startTime, endTime } = req.body;
+    const weekdayNumber = Number(weekday);
+
+    if (!Number.isInteger(weekdayNumber) || weekdayNumber < 1 || weekdayNumber > 7) {
+      return res.status(400).json({
+        success: false,
+        message: "Le jour doit être un nombre entre 1 (lundi) et 7 (dimanche).",
+      });
+    }
+
+    if (!TIME_PATTERN.test(startTime) || !TIME_PATTERN.test(endTime)) {
+      return res.status(400).json({
+        success: false,
+        message: "Les horaires doivent être au format HH:MM.",
+      });
+    }
+
+    if (startTime >= endTime) {
+      return res.status(400).json({
+        success: false,
+        message: "L'heure de fin doit être après l'heure de début.",
+      });
+    }
+
+    const doctor = await doctorModel.findByUserId(req.user.id);
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Fiche médecin introuvable.",
+      });
+    }
+
+    const availability = await doctorModel.addAvailability(doctor.id, {
+      weekday: weekdayNumber,
+      startTime,
+      endTime,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Disponibilité ajoutée.",
+      availability,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const deleteMyAvailability = async (req, res, next) => {
+  try {
+    const doctor = await doctorModel.findByUserId(req.user.id);
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Fiche médecin introuvable.",
+      });
+    }
+
+    const deleted = await doctorModel.deleteAvailability(req.params.id, doctor.id);
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: "Disponibilité introuvable.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Disponibilité supprimée.",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const getMyPatients = async (req, res, next) => {
+  try {
+    const patients = await appointmentService.listMyPatients(req.user.id);
+
+    return res.status(200).json({ success: true, patients });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+module.exports = {
+  searchDoctors,
+  getDoctorById,
+  getDoctorAvailability,
+  getMyProfile,
+  updateMyProfile,
+  getMyAvailabilities,
+  addMyAvailability,
+  deleteMyAvailability,
+  getMyPatients,
+};

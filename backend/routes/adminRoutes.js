@@ -6,6 +6,9 @@ const {
   getStats,
   getUsers,
   getPendingDoctors,
+  getAllDoctors,
+  getAllAppointments,
+  getStatistics,
   approveDoctor,
   updateUserStatus,
 } = require("../controllers/adminController");
@@ -21,6 +24,9 @@ router.use(protect, authorize("admin"));
 router.get("/stats", getStats);
 router.get("/users", getUsers);
 router.get("/doctors/pending", getPendingDoctors);
+router.get("/doctors", getAllDoctors);
+router.get("/appointments", getAllAppointments);
+router.get("/statistics", getStatistics);
 router.patch("/doctors/:id/approve", approveDoctor);
 router.patch("/users/:id/status", updateUserStatus);
 

@@ -45,6 +45,77 @@ const getPendingDoctors = async (req, res, next) => {
   }
 };
 
+const getAllDoctors = async (req, res, next) => {
+  try {
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100);
+    const offset = (page - 1) * limit;
+
+    const { rows, total } = await adminModel.getAllDoctors({ limit, offset });
+
+    return res.status(200).json({
+      success: true,
+      doctors: rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const getAllAppointments = async (req, res, next) => {
+  try {
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100);
+    const offset = (page - 1) * limit;
+    const { status } = req.query;
+
+    const { rows, total } = await adminModel.getAllAppointments({
+      limit,
+      offset,
+      status,
+    });
+
+    return res.status(200).json({
+      success: true,
+      appointments: rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const getStatistics = async (req, res, next) => {
+  try {
+    const [usersByRole, appointmentsByStatus, doctorsBySpecialty] =
+      await Promise.all([
+        adminModel.getUsersByRole(),
+        adminModel.getAppointmentsByStatus(),
+        adminModel.getDoctorsBySpecialty(),
+      ]);
+
+    return res.status(200).json({
+      success: true,
+      usersByRole,
+      appointmentsByStatus,
+      doctorsBySpecialty,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 const approveDoctor = async (req, res, next) => {
   try {
     const approved = await adminModel.approveDoctor(req.params.id);
@@ -106,6 +177,9 @@ module.exports = {
   getStats,
   getUsers,
   getPendingDoctors,
+  getAllDoctors,
+  getAllAppointments,
+  getStatistics,
   approveDoctor,
   updateUserStatus,
 };

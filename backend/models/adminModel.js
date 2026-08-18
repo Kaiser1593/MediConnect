@@ -56,6 +56,84 @@ const getPendingDoctors = async () => {
   return rows;
 };
 
+// Tous les médecins (validés et en attente), pour la page "Médecins".
+const getAllDoctors = async ({ limit, offset }) => {
+  const [rows] = await pool.query(
+    `SELECT d.id, d.license_number, d.city, d.is_approved, d.created_at,
+            u.id AS user_id, u.firstname, u.lastname, u.email,
+            s.name AS specialty
+     FROM doctors d
+     JOIN users u ON u.id = d.user_id
+     LEFT JOIN specialties s ON s.id = d.specialty_id
+     ORDER BY d.created_at DESC
+     LIMIT ? OFFSET ?`,
+    [limit, offset],
+  );
+
+  const [[{ total }]] = await pool.query(
+    "SELECT COUNT(*) AS total FROM doctors",
+  );
+
+  return { rows, total };
+};
+
+// Tous les rendez-vous de la plateforme, avec patient et médecin joints.
+const getAllAppointments = async ({ limit, offset, status }) => {
+  const whereClause = status ? "WHERE a.status = ?" : "";
+  const params = status ? [status] : [];
+
+  const [rows] = await pool.query(
+    `SELECT a.id, a.scheduled_on, a.start_time, a.status,
+            pu.firstname AS patient_firstname, pu.lastname AS patient_lastname,
+            du.firstname AS doctor_firstname, du.lastname AS doctor_lastname
+     FROM appointments a
+     JOIN patients p ON p.id = a.patient_id
+     JOIN users pu   ON pu.id = p.user_id
+     JOIN doctors d  ON d.id = a.doctor_id
+     JOIN users du   ON du.id = d.user_id
+     ${whereClause}
+     ORDER BY a.scheduled_on DESC, a.start_time DESC
+     LIMIT ? OFFSET ?`,
+    [...params, limit, offset],
+  );
+
+  const [[{ total }]] = await pool.query(
+    `SELECT COUNT(*) AS total FROM appointments a ${whereClause}`,
+    params,
+  );
+
+  return { rows, total };
+};
+
+// Répartitions utilisées par la page "Statistiques".
+const getUsersByRole = async () => {
+  const [rows] = await pool.query(
+    "SELECT role, COUNT(*) AS total FROM users GROUP BY role",
+  );
+
+  return rows;
+};
+
+const getAppointmentsByStatus = async () => {
+  const [rows] = await pool.query(
+    "SELECT status, COUNT(*) AS total FROM appointments GROUP BY status",
+  );
+
+  return rows;
+};
+
+const getDoctorsBySpecialty = async () => {
+  const [rows] = await pool.query(
+    `SELECT COALESCE(s.name, 'Non renseignée') AS specialty, COUNT(*) AS total
+     FROM doctors d
+     LEFT JOIN specialties s ON s.id = d.specialty_id
+     GROUP BY s.name
+     ORDER BY total DESC`,
+  );
+
+  return rows;
+};
+
 const approveDoctor = async (doctorId) => {
   const [result] = await pool.query(
     "UPDATE doctors SET is_approved = TRUE WHERE id = ?",
@@ -78,6 +156,11 @@ module.exports = {
   getStats,
   getUsers,
   getPendingDoctors,
+  getAllDoctors,
+  getAllAppointments,
+  getUsersByRole,
+  getAppointmentsByStatus,
+  getDoctorsBySpecialty,
   approveDoctor,
   setUserActiveStatus,
 };
