@@ -30,6 +30,36 @@ const create = async ({
   };
 };
 
+// La contrainte UNIQUE (doctor_id, scheduled_on, start_time) porte sur le
+// créneau, pas sur son statut : un rendez-vous annulé occupe donc toujours
+// la ligne. Avant de réserver, on vérifie s'il en existe déjà une pour ce
+// créneau (annulée ou non) afin de la réactiver plutôt que d'entrer en
+// conflit avec elle.
+const findByDoctorSlot = async (doctorId, scheduledOn, startTime) => {
+  const [rows] = await pool.query(
+    `SELECT id, status
+     FROM appointments
+     WHERE doctor_id = ? AND scheduled_on = ? AND start_time = ?
+     LIMIT 1`,
+    [doctorId, scheduledOn, startTime],
+  );
+
+  return rows[0] || null;
+};
+
+// Réutilise une ligne annulée pour une nouvelle réservation, plutôt que
+// d'insérer un doublon qui violerait la contrainte UNIQUE du créneau.
+const reactivate = async (id, { patientId, endTime, reason }) => {
+  await pool.query(
+    `UPDATE appointments
+     SET patient_id = ?, end_time = ?, reason = ?, status = 'pending', doctor_notes = NULL
+     WHERE id = ?`,
+    [patientId, endTime, reason || null, id],
+  );
+
+  return { id, patientId, endTime, reason: reason || null, status: "pending" };
+};
+
 // Statistiques du tableau de bord patient. "today" est fourni par l'appelant
 // (calculé côté service) plutôt que CURDATE(), pour rester cohérent avec la
 // date utilisée par le calcul des créneaux, qui ne dépend pas du fuseau
@@ -140,10 +170,74 @@ const getDoctorTodayAppointments = async (doctorId, today) => {
   return rows;
 };
 
+// Tous les rendez-vous d'un patient (page "Mes rendez-vous"), du plus
+// récent au plus ancien : le frontend distingue à venir / passés lui-même.
+const getAllByPatientId = async (patientId) => {
+  const [rows] = await pool.query(
+    `SELECT a.id, a.scheduled_on, a.start_time, a.status, a.reason,
+            u.firstname, u.lastname,
+            CONCAT('Dr ', u.firstname, ' ', u.lastname) AS doctor_name,
+            s.name AS specialty
+     FROM appointments a
+     JOIN doctors d ON d.id = a.doctor_id
+     JOIN users u   ON u.id = d.user_id
+     LEFT JOIN specialties s ON s.id = d.specialty_id
+     WHERE a.patient_id = ?
+     ORDER BY a.scheduled_on DESC, a.start_time DESC`,
+    [patientId],
+  );
+
+  return rows;
+};
+
+// Tous les rendez-vous d'un médecin (page "Mon agenda").
+const getAllByDoctorId = async (doctorId) => {
+  const [rows] = await pool.query(
+    `SELECT a.id, a.scheduled_on, a.start_time, a.status, a.reason,
+            u.firstname, u.lastname
+     FROM appointments a
+     JOIN patients p ON p.id = a.patient_id
+     JOIN users u    ON u.id = p.user_id
+     WHERE a.doctor_id = ?
+     ORDER BY a.scheduled_on DESC, a.start_time DESC`,
+    [doctorId],
+  );
+
+  return rows;
+};
+
+// Utilisé pour vérifier la propriété d'un rendez-vous avant annulation.
+const findById = async (id) => {
+  const [rows] = await pool.query(
+    `SELECT id, patient_id, doctor_id, scheduled_on, start_time, status
+     FROM appointments
+     WHERE id = ?
+     LIMIT 1`,
+    [id],
+  );
+
+  return rows[0] || null;
+};
+
+const cancel = async (id) => {
+  const [result] = await pool.query(
+    "UPDATE appointments SET status = 'cancelled' WHERE id = ?",
+    [id],
+  );
+
+  return result.affectedRows > 0;
+};
+
 module.exports = {
   create,
+  findByDoctorSlot,
+  reactivate,
   getPatientStats,
   getPatientAppointments,
   getDoctorStats,
   getDoctorTodayAppointments,
+  getAllByPatientId,
+  getAllByDoctorId,
+  findById,
+  cancel,
 };

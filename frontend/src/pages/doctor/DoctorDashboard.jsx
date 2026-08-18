@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import useAuth from "../../hooks/useAuth";
@@ -143,6 +144,10 @@ function DoctorDashboard() {
                   <h2>Rendez-vous du jour</h2>
                   <p>{todayLabel}</p>
                 </div>
+
+                <Link to="/doctor/agenda" className="outline-button">
+                  Voir l’agenda
+                </Link>
               </div>
 
               {appointments.length === 0 ? (

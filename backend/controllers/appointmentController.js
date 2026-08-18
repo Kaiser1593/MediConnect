@@ -44,4 +44,32 @@ const getMyDashboard = async (req, res, next) => {
   }
 };
 
-module.exports = { createAppointment, getMyDashboard };
+const listMyAppointments = async (req, res, next) => {
+  try {
+    const appointments = await appointmentService.listMyAppointments(req.user);
+
+    return res.status(200).json({ success: true, appointments });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const cancelAppointment = async (req, res, next) => {
+  try {
+    await appointmentService.cancelAppointment(req.user, req.params.id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Le rendez-vous a été annulé.",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+module.exports = {
+  createAppointment,
+  getMyDashboard,
+  listMyAppointments,
+  cancelAppointment,
+};

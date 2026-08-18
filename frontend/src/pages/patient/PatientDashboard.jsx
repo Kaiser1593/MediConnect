@@ -127,6 +127,10 @@ function PatientDashboard() {
                   <h2>Prochains rendez-vous</h2>
                   <p>Vos consultations médicales planifiées.</p>
                 </div>
+
+                <Link to="/patient/rendez-vous" className="outline-button">
+                  Voir tous
+                </Link>
               </div>
 
               {appointments.length === 0 ? (

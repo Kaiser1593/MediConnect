@@ -10,7 +10,9 @@ import Register from "./pages/auth/Register";
 import PatientDashboard from "./pages/patient/PatientDashboard";
 import DoctorSearch from "./pages/patient/DoctorSearch";
 import AppointmentBooking from "./pages/patient/AppointmentBooking";
+import MyAppointments from "./pages/patient/MyAppointments";
 import DoctorDashboard from "./pages/doctor/DoctorDashboard";
+import MyAgenda from "./pages/doctor/MyAgenda";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 
 import "./App.css";
@@ -85,12 +87,30 @@ function App() {
           }
         />
 
+        <Route
+          path="/patient/rendez-vous"
+          element={
+            <ProtectedRoute allowedRoles={["patient"]}>
+              <MyAppointments />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Espace médecin */}
         <Route
           path="/doctor/dashboard"
           element={
             <ProtectedRoute allowedRoles={["doctor"]}>
               <DoctorDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/doctor/agenda"
+          element={
+            <ProtectedRoute allowedRoles={["doctor"]}>
+              <MyAgenda />
             </ProtectedRoute>
           }
         />

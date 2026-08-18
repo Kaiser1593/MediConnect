@@ -122,6 +122,34 @@ const bookAppointment = async ({
   const startMinutes = parseTimeToMinutes(normalizedStartTime);
   const endTime = minutesToTime(startMinutes + doctor.slot_duration);
 
+  // La contrainte UNIQUE du créneau porte sur (doctor_id, scheduled_on,
+  // start_time) sans tenir compte du statut : un rendez-vous annulé sur ce
+  // créneau doit être réactivé, pas dupliqué (sinon la contrainte le refuse).
+  const existing = await appointmentModel.findByDoctorSlot(
+    doctorId,
+    scheduledOn,
+    normalizedStartTime,
+  );
+
+  if (existing) {
+    await appointmentModel.reactivate(existing.id, {
+      patientId: patient.id,
+      endTime,
+      reason,
+    });
+
+    return {
+      id: existing.id,
+      patientId: patient.id,
+      doctorId,
+      scheduledOn,
+      startTime: normalizedStartTime,
+      endTime,
+      reason: reason || null,
+      status: "pending",
+    };
+  }
+
   return appointmentModel.create({
     patientId: patient.id,
     doctorId,
@@ -170,9 +198,64 @@ const getDoctorDashboard = async (userId) => {
   return { stats, appointments, availabilities };
 };
 
+// Liste complète des rendez-vous de l'utilisateur connecté, quel que
+// soit son rôle : page "Mes rendez-vous" (patient) ou "Mon agenda" (médecin).
+const listMyAppointments = async (user) => {
+  if (user.role === "doctor") {
+    const doctor = await doctorModel.findByUserId(user.id);
+
+    if (!doctor) {
+      throw makeError("Fiche médecin introuvable.", 404);
+    }
+
+    return appointmentModel.getAllByDoctorId(doctor.id);
+  }
+
+  const patient = await patientModel.findByUserId(user.id);
+
+  if (!patient) {
+    throw makeError("Fiche patient introuvable.", 404);
+  }
+
+  return appointmentModel.getAllByPatientId(patient.id);
+};
+
+// Annule un rendez-vous, côté patient ou côté médecin. Vérifie que
+// l'utilisateur connecté est bien partie prenante du rendez-vous : on ne
+// fait jamais confiance à un identifiant transmis par le client seul.
+const cancelAppointment = async (user, appointmentId) => {
+  const appointment = await appointmentModel.findById(appointmentId);
+
+  if (!appointment) {
+    throw makeError("Rendez-vous introuvable.", 404);
+  }
+
+  if (appointment.status === "cancelled" || appointment.status === "completed") {
+    throw makeError("Ce rendez-vous ne peut plus être annulé.", 400);
+  }
+
+  if (user.role === "doctor") {
+    const doctor = await doctorModel.findByUserId(user.id);
+
+    if (!doctor || doctor.id !== appointment.doctor_id) {
+      throw makeError("Ce rendez-vous ne vous appartient pas.", 403);
+    }
+  } else {
+    const patient = await patientModel.findByUserId(user.id);
+
+    if (!patient || patient.id !== appointment.patient_id) {
+      throw makeError("Ce rendez-vous ne vous appartient pas.", 403);
+    }
+  }
+
+  await appointmentModel.cancel(appointmentId);
+};
+
 module.exports = {
   computeAvailableSlots,
   bookAppointment,
   getPatientDashboard,
   getDoctorDashboard,
+  listMyAppointments,
+  cancelAppointment,
 };
