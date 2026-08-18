@@ -35,6 +35,7 @@ function DoctorDashboard() {
   const [availabilities, setAvailabilities] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [confirmingId, setConfirmingId] = useState(null);
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -55,6 +56,29 @@ function DoctorDashboard() {
 
     loadDashboard();
   }, []);
+
+  const handleConfirm = async (appointmentId) => {
+    setConfirmingId(appointmentId);
+    setError("");
+
+    try {
+      await api.patch(`/appointments/${appointmentId}/confirm`);
+      setAppointments((previous) =>
+        previous.map((appointment) =>
+          appointment.id === appointmentId
+            ? { ...appointment, status: "confirmed" }
+            : appointment,
+        ),
+      );
+    } catch (submitError) {
+      setError(
+        submitError.response?.data?.message ||
+          "La confirmation a échoué. Veuillez réessayer.",
+      );
+    } finally {
+      setConfirmingId(null);
+    }
+  };
 
   const todayLabel = capitalize(
     new Date().toLocaleDateString("fr-FR", {
@@ -180,6 +204,19 @@ function DoctorDashboard() {
                       >
                         {STATUS_LABELS[appointment.status]}
                       </span>
+
+                      {appointment.status === "pending" ? (
+                        <button
+                          type="button"
+                          className="outline-button"
+                          disabled={confirmingId === appointment.id}
+                          onClick={() => handleConfirm(appointment.id)}
+                        >
+                          {confirmingId === appointment.id ? "…" : "Confirmer"}
+                        </button>
+                      ) : (
+                        <span />
+                      )}
                     </div>
                   ))}
                 </div>

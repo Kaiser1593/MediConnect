@@ -7,6 +7,8 @@ const {
   getMyDashboard,
   listMyAppointments,
   cancelAppointment,
+  confirmAppointment,
+  completeAppointment,
 } = require("../controllers/appointmentController");
 const { protect } = require("../middleware/authMiddleware");
 const { authorize } = require("../middleware/roleMiddleware");
@@ -24,6 +26,15 @@ router.patch(
   protect,
   authorize("patient", "doctor"),
   cancelAppointment,
+);
+
+// Confirmation et clôture sont des actions réservées au médecin.
+router.patch("/:id/confirm", protect, authorize("doctor"), confirmAppointment);
+router.patch(
+  "/:id/complete",
+  protect,
+  authorize("doctor"),
+  completeAppointment,
 );
 
 module.exports = router;

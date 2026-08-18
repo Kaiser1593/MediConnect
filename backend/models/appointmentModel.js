@@ -228,6 +228,26 @@ const cancel = async (id) => {
   return result.affectedRows > 0;
 };
 
+const confirm = async (id) => {
+  const [result] = await pool.query(
+    "UPDATE appointments SET status = 'confirmed' WHERE id = ?",
+    [id],
+  );
+
+  return result.affectedRows > 0;
+};
+
+// doctor_notes n'est jamais exposé au patient : c'est le compte rendu
+// interne du médecin, réservé à son propre usage.
+const complete = async (id, doctorNotes) => {
+  const [result] = await pool.query(
+    "UPDATE appointments SET status = 'completed', doctor_notes = ? WHERE id = ?",
+    [doctorNotes || null, id],
+  );
+
+  return result.affectedRows > 0;
+};
+
 // Patients distincts d'un médecin (page "Mes patients"), avec le nombre
 // de rendez-vous et la date du dernier, du plus récent au plus ancien.
 const getDistinctPatientsForDoctor = async (doctorId) => {
@@ -260,4 +280,6 @@ module.exports = {
   getDistinctPatientsForDoctor,
   findById,
   cancel,
+  confirm,
+  complete,
 };

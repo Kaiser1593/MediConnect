@@ -36,9 +36,18 @@ const formatTime = (time) => time.slice(0, 5).replace(":", " h ");
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
-function AgendaRow({ appointment, onCancel, isCancelling }) {
+function AgendaRow({
+  appointment,
+  onCancel,
+  onConfirm,
+  onComplete,
+  isCancelling,
+  isConfirming,
+  isCompleting,
+}) {
   const canCancel =
     appointment.status === "pending" || appointment.status === "confirmed";
+  const isBusy = isCancelling || isConfirming || isCompleting;
 
   return (
     <div className="doctor-appointment-row">
@@ -64,18 +73,40 @@ function AgendaRow({ appointment, onCancel, isCancelling }) {
         {STATUS_LABELS[appointment.status]}
       </span>
 
-      {canCancel ? (
-        <button
-          type="button"
-          className="cancel-button"
-          disabled={isCancelling}
-          onClick={() => onCancel(appointment.id)}
-        >
-          {isCancelling ? "Annulation…" : "Annuler"}
-        </button>
-      ) : (
-        <span />
-      )}
+      <div className="row-actions">
+        {appointment.status === "pending" && (
+          <button
+            type="button"
+            className="outline-button"
+            disabled={isBusy}
+            onClick={() => onConfirm(appointment.id)}
+          >
+            {isConfirming ? "…" : "Confirmer"}
+          </button>
+        )}
+
+        {appointment.status === "confirmed" && (
+          <button
+            type="button"
+            className="outline-button"
+            disabled={isBusy}
+            onClick={() => onComplete(appointment.id)}
+          >
+            {isCompleting ? "…" : "Terminer"}
+          </button>
+        )}
+
+        {canCancel && (
+          <button
+            type="button"
+            className="cancel-button"
+            disabled={isBusy}
+            onClick={() => onCancel(appointment.id)}
+          >
+            {isCancelling ? "…" : "Annuler"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -85,6 +116,8 @@ function MyAgenda() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [cancellingId, setCancellingId] = useState(null);
+  const [confirmingId, setConfirmingId] = useState(null);
+  const [completingId, setCompletingId] = useState(null);
 
   useEffect(() => {
     const loadAppointments = async () => {
@@ -126,6 +159,61 @@ function MyAgenda() {
       );
     } finally {
       setCancellingId(null);
+    }
+  };
+
+  const handleConfirm = async (appointmentId) => {
+    setConfirmingId(appointmentId);
+    setError("");
+
+    try {
+      await api.patch(`/appointments/${appointmentId}/confirm`);
+      setAppointments((previous) =>
+        previous.map((appointment) =>
+          appointment.id === appointmentId
+            ? { ...appointment, status: "confirmed" }
+            : appointment,
+        ),
+      );
+    } catch (submitError) {
+      setError(
+        submitError.response?.data?.message ||
+          "La confirmation a échoué. Veuillez réessayer.",
+      );
+    } finally {
+      setConfirmingId(null);
+    }
+  };
+
+  const handleComplete = async (appointmentId) => {
+    const doctorNotes = window.prompt(
+      "Compte rendu (facultatif, visible de vous seul) :",
+      "",
+    );
+
+    if (doctorNotes === null) return;
+
+    setCompletingId(appointmentId);
+    setError("");
+
+    try {
+      await api.patch(`/appointments/${appointmentId}/complete`, {
+        doctorNotes,
+      });
+      setAppointments((previous) =>
+        previous.map((appointment) =>
+          appointment.id === appointmentId
+            ? { ...appointment, status: "completed" }
+            : appointment,
+        ),
+      );
+    } catch (submitError) {
+      setError(
+        submitError.response?.data?.message ||
+          "La clôture a échoué. Veuillez réessayer.",
+      );
+    } finally {
+      setCompletingId(null);
     }
   };
 
@@ -177,7 +265,11 @@ function MyAgenda() {
                     key={appointment.id}
                     appointment={appointment}
                     onCancel={handleCancel}
+                    onConfirm={handleConfirm}
+                    onComplete={handleComplete}
                     isCancelling={cancellingId === appointment.id}
+                    isConfirming={confirmingId === appointment.id}
+                    isCompleting={completingId === appointment.id}
                   />
                 ))}
               </div>
@@ -201,7 +293,11 @@ function MyAgenda() {
                     key={appointment.id}
                     appointment={appointment}
                     onCancel={handleCancel}
+                    onConfirm={handleConfirm}
+                    onComplete={handleComplete}
                     isCancelling={cancellingId === appointment.id}
+                    isConfirming={confirmingId === appointment.id}
+                    isCompleting={completingId === appointment.id}
                   />
                 ))}
               </div>

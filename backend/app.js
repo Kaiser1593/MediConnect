@@ -18,6 +18,15 @@ app.use(
 
 app.use(express.json());
 
+// express.json() ne pose req.body que si Content-Type: application/json
+// est présent. Une requête sans corps (ex. PATCH sans -d) laisse sinon
+// req.body à undefined, et le déstructurer plante n'importe quel
+// contrôleur avec un 500 au lieu d'un 400 propre.
+app.use((req, res, next) => {
+  if (!req.body) req.body = {};
+  next();
+});
+
 app.get("/", (req, res) => {
   res.json({
     success: true,

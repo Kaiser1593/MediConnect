@@ -251,6 +251,50 @@ const cancelAppointment = async (user, appointmentId) => {
   await appointmentModel.cancel(appointmentId);
 };
 
+// Récupère un rendez-vous et vérifie qu'il appartient bien au médecin
+// connecté. Réutilisé par confirmAppointment et completeAppointment.
+const getOwnedDoctorAppointment = async (userId, appointmentId) => {
+  const appointment = await appointmentModel.findById(appointmentId);
+
+  if (!appointment) {
+    throw makeError("Rendez-vous introuvable.", 404);
+  }
+
+  const doctor = await doctorModel.findByUserId(userId);
+
+  if (!doctor || doctor.id !== appointment.doctor_id) {
+    throw makeError("Ce rendez-vous ne vous appartient pas.", 403);
+  }
+
+  return appointment;
+};
+
+// Un médecin confirme une demande de rendez-vous en attente.
+const confirmAppointment = async (user, appointmentId) => {
+  const appointment = await getOwnedDoctorAppointment(user.id, appointmentId);
+
+  if (appointment.status !== "pending") {
+    throw makeError("Seul un rendez-vous en attente peut être confirmé.", 400);
+  }
+
+  await appointmentModel.confirm(appointmentId);
+};
+
+// Un médecin clôture une consultation confirmée, avec un compte rendu
+// facultatif visible de lui seul.
+const completeAppointment = async (user, appointmentId, doctorNotes) => {
+  const appointment = await getOwnedDoctorAppointment(user.id, appointmentId);
+
+  if (appointment.status !== "confirmed") {
+    throw makeError(
+      "Seul un rendez-vous confirmé peut être marqué comme terminé.",
+      400,
+    );
+  }
+
+  await appointmentModel.complete(appointmentId, doctorNotes);
+};
+
 // Patients distincts d'un médecin, pour la page "Mes patients".
 const listMyPatients = async (userId) => {
   const doctor = await doctorModel.findByUserId(userId);
@@ -269,5 +313,7 @@ module.exports = {
   getDoctorDashboard,
   listMyAppointments,
   cancelAppointment,
+  confirmAppointment,
+  completeAppointment,
   listMyPatients,
 };

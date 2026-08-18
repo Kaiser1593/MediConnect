@@ -67,9 +67,43 @@ const cancelAppointment = async (req, res, next) => {
   }
 };
 
+const confirmAppointment = async (req, res, next) => {
+  try {
+    await appointmentService.confirmAppointment(req.user, req.params.id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Le rendez-vous a été confirmé.",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const completeAppointment = async (req, res, next) => {
+  try {
+    const { doctorNotes } = req.body;
+
+    await appointmentService.completeAppointment(
+      req.user,
+      req.params.id,
+      doctorNotes,
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Le rendez-vous a été marqué comme terminé.",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 module.exports = {
   createAppointment,
   getMyDashboard,
   listMyAppointments,
   cancelAppointment,
+  confirmAppointment,
+  completeAppointment,
 };
