@@ -14,9 +14,18 @@ const app = express();
 
 app.use(helmet());
 
+// 5173 = serveur Vite en développement, 8080 = frontend servi par Nginx
+// dans le conteneur Docker (voir docker-compose.yml). CORS_ORIGIN permet
+// d'ajouter d'autres origines (ex. un nom de domaine) sans toucher au code.
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:8080",
+  ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : []),
+];
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
   }),
 );
 

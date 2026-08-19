@@ -26,7 +26,8 @@ Prérequis : Docker et Docker Compose.
 
    - Frontend : http://localhost:8080
    - API : http://localhost:5000/api
-   - MySQL : localhost:3306
+   - MySQL : localhost:3307 (le 3306 par défaut est volontairement évité :
+     il entre en conflit avec une éventuelle instance MySQL locale)
 
 4. Créer un compte administrateur (l'inscription publique ne le permet pas) :
 
@@ -34,8 +35,28 @@ Prérequis : Docker et Docker Compose.
    docker compose exec backend node scripts/createAdmin.js <email> <mot-de-passe>
    ```
 
-Pour tout arrêter : `docker compose down` (ajouter `-v` pour supprimer
-également les données MySQL).
+### Arrêter / réinitialiser
+
+- Arrêter les services (les données MySQL sont conservées) :
+
+  ```
+  docker compose down
+  ```
+
+- Réinitialiser complètement (supprime aussi le volume MySQL : au prochain
+  `up`, la base est recréée intégralement depuis `database/mediconnect.sql`) :
+
+  ```
+  docker compose down -v
+  docker compose up
+  ```
+
+- Redémarrer après une modification du code backend ou frontend (reconstruit
+  les images) :
+
+  ```
+  docker compose up --build
+  ```
 
 ## Lancement en développement (sans Docker)
 
@@ -53,3 +74,13 @@ et une base MySQL locale chargée avec `database/mediconnect.sql`.
 ```
 cd backend && npm test
 ```
+## Lancement backend (node/express) (docker)
+
+cd backend
+npm run dev
+
+docker compose up -d
+
+## Arrêt backend docker
+
+docker compose down

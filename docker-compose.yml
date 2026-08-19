@@ -6,17 +6,24 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
     ports:
-      - "3306:3306"
+      # 3307 côté hôte : le 3306 est déjà pris par une instance MySQL locale.
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       # Le schéma est chargé automatiquement au tout premier démarrage
       # (dossier vu par MySQL uniquement quand le volume est vide).
       - ./database/mediconnect.sql:/docker-entrypoint-initdb.d/mediconnect.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      # "-h localhost" passerait par le socket Unix, qui répond déjà
+      # pendant la phase d'initialisation (le serveur temporaire utilisé
+      # pour charger mediconnect.sql, avant que le vrai serveur réseau ne
+      # démarre). Forcer le protocole TCP garantit que le port 3306 est
+      # réellement ouvert quand le healthcheck passe au vert.
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--protocol=tcp"]
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 10s
 
   backend:
     build: ./backend
