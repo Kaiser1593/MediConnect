@@ -22,6 +22,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminDoctors from "./pages/admin/AdminDoctors";
 import AdminAppointments from "./pages/admin/AdminAppointments";
 import AdminStatistics from "./pages/admin/AdminStatistics";
+import AdminLogs from "./pages/admin/AdminLogs";
 import AdminSettings from "./pages/admin/AdminSettings";
 
 import "./App.css";
@@ -202,6 +203,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <AdminStatistics />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/journaux"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminLogs />
             </ProtectedRoute>
           }
         />

@@ -6,6 +6,7 @@
 const doctorModel = require("../models/doctorModel");
 const patientModel = require("../models/patientModel");
 const appointmentModel = require("../models/appointmentModel");
+const notificationService = require("./notificationService");
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -131,11 +132,21 @@ const bookAppointment = async ({
     normalizedStartTime,
   );
 
+  const doctorUserId = await doctorModel.getUserIdById(doctorId);
+
   if (existing) {
     await appointmentModel.reactivate(existing.id, {
       patientId: patient.id,
       endTime,
       reason,
+    });
+
+    notificationService.notifyAppointmentCreated({
+      patientUserId,
+      doctorUserId,
+      doctorName: doctor.full_name,
+      scheduledOn,
+      startTime: normalizedStartTime,
     });
 
     return {
@@ -150,7 +161,7 @@ const bookAppointment = async ({
     };
   }
 
-  return appointmentModel.create({
+  const created = await appointmentModel.create({
     patientId: patient.id,
     doctorId,
     scheduledOn,
@@ -158,6 +169,16 @@ const bookAppointment = async ({
     endTime,
     reason,
   });
+
+  notificationService.notifyAppointmentCreated({
+    patientUserId,
+    doctorUserId,
+    doctorName: doctor.full_name,
+    scheduledOn,
+    startTime: normalizedStartTime,
+  });
+
+  return created;
 };
 
 // Données du tableau de bord patient : rendez-vous à venir + statistiques.
@@ -249,6 +270,18 @@ const cancelAppointment = async (user, appointmentId) => {
   }
 
   await appointmentModel.cancel(appointmentId);
+
+  // On informe la partie qui n'est pas à l'origine de l'annulation.
+  const recipientUserId =
+    user.role === "doctor"
+      ? await patientModel.getUserIdById(appointment.patient_id)
+      : await doctorModel.getUserIdById(appointment.doctor_id);
+
+  notificationService.notifyAppointmentCancelled({
+    recipientUserId,
+    scheduledOn: appointment.scheduled_on.toISOString().slice(0, 10),
+    startTime: appointment.start_time,
+  });
 };
 
 // Récupère un rendez-vous et vérifie qu'il appartient bien au médecin
@@ -278,6 +311,14 @@ const confirmAppointment = async (user, appointmentId) => {
   }
 
   await appointmentModel.confirm(appointmentId);
+
+  const patientUserId = await patientModel.getUserIdById(appointment.patient_id);
+
+  notificationService.notifyAppointmentConfirmed({
+    patientUserId,
+    scheduledOn: appointment.scheduled_on.toISOString().slice(0, 10),
+    startTime: appointment.start_time,
+  });
 };
 
 // Un médecin clôture une consultation confirmée, avec un compte rendu

@@ -203,6 +203,27 @@ CREATE TABLE notifications (
 
 
 -- =====================================================
+--  9. SECURITY_LOGS : journal des événements de sécurité
+--     user_id est nullable : une tentative de connexion sur un e-mail
+--     inexistant n'a pas d'utilisateur associé.
+-- =====================================================
+CREATE TABLE security_logs (
+  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id    INT UNSIGNED NULL,
+  event_type VARCHAR(50) NOT NULL,
+  message    VARCHAR(255) NOT NULL,
+  ip_address VARCHAR(45) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT fk_security_logs_user FOREIGN KEY (user_id)
+    REFERENCES users(id) ON DELETE SET NULL,
+
+  INDEX idx_security_logs_type (event_type, created_at),
+  INDEX idx_security_logs_user (user_id)
+) ENGINE = InnoDB;
+
+
+-- =====================================================
 --  DONNÉES DE BASE : les spécialités
 -- =====================================================
 INSERT INTO specialties (name, slug, description) VALUES

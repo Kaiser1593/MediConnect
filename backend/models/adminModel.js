@@ -152,6 +152,31 @@ const setUserActiveStatus = async (userId, isActive) => {
   return result.affectedRows > 0;
 };
 
+// Journaux de sécurité, les plus récents d'abord, avec filtre optionnel
+// par type d'événement, pour la page "Journaux" de l'espace administrateur.
+const getSecurityLogs = async ({ limit, offset, eventType }) => {
+  const whereClause = eventType ? "WHERE l.event_type = ?" : "";
+  const params = eventType ? [eventType] : [];
+
+  const [rows] = await pool.query(
+    `SELECT l.id, l.event_type, l.message, l.ip_address, l.created_at,
+            u.id AS user_id, u.firstname, u.lastname
+     FROM security_logs l
+     LEFT JOIN users u ON u.id = l.user_id
+     ${whereClause}
+     ORDER BY l.created_at DESC
+     LIMIT ? OFFSET ?`,
+    [...params, limit, offset],
+  );
+
+  const [[{ total }]] = await pool.query(
+    `SELECT COUNT(*) AS total FROM security_logs l ${whereClause}`,
+    params,
+  );
+
+  return { rows, total };
+};
+
 module.exports = {
   getStats,
   getUsers,
@@ -163,4 +188,5 @@ module.exports = {
   getDoctorsBySpecialty,
   approveDoctor,
   setUserActiveStatus,
+  getSecurityLogs,
 };

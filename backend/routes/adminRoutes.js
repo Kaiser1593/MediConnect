@@ -11,6 +11,7 @@ const {
   getStatistics,
   approveDoctor,
   updateUserStatus,
+  getLogs,
 } = require("../controllers/adminController");
 
 const { protect } = require("../middleware/authMiddleware");
@@ -27,6 +28,7 @@ router.get("/doctors/pending", getPendingDoctors);
 router.get("/doctors", getAllDoctors);
 router.get("/appointments", getAllAppointments);
 router.get("/statistics", getStatistics);
+router.get("/logs", getLogs);
 router.patch("/doctors/:id/approve", approveDoctor);
 router.patch("/users/:id/status", updateUserStatus);
 

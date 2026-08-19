@@ -1,4 +1,5 @@
 const express = require("express");
+const helmet = require("helmet");
 const cors = require("cors");
 
 const authRoutes = require("./routes/authRoutes");
@@ -7,8 +8,11 @@ const doctorRoutes = require("./routes/doctorRoutes");
 const patientRoutes = require("./routes/patientRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
 const specialtyRoutes = require("./routes/specialtyRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 const app = express();
+
+app.use(helmet());
 
 app.use(
   cors({
@@ -49,6 +53,7 @@ app.use("/api/doctors", doctorRoutes);
 app.use("/api/patients", patientRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/specialties", specialtyRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

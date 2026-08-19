@@ -1,16 +1,9 @@
 // backend/controllers/authController.js
-
-const bcrypt = require("bcrypt");
+// Ne garde que la validation du format des champs et la construction de
+// la réponse HTTP : la logique métier vit dans services/authService.js.
 
 const userModel = require("../models/userModel");
-const { generateToken } = require("../utils/generateToken");
-
-const SALT_ROUNDS = 12;
-
-// Les rôles qu'un visiteur peut choisir librement.
-// "admin" en est volontairement absent : un compte administrateur
-// ne se crée jamais via le formulaire public.
-const PUBLIC_ROLES = ["patient", "doctor"];
+const authService = require("../services/authService");
 
 const registerUser = async (req, res, next) => {
   try {
@@ -45,33 +38,14 @@ const registerUser = async (req, res, next) => {
       });
     }
 
-    if (!PUBLIC_ROLES.includes(role)) {
-      return res.status(400).json({
-        success: false,
-        message: "Le type de compte sélectionné est invalide.",
-      });
-    }
-
-    const normalizedEmail = email.trim().toLowerCase();
-
-    if (await userModel.emailExists(normalizedEmail)) {
-      return res.status(409).json({
-        success: false,
-        message: "Un compte existe déjà avec cette adresse e-mail.",
-      });
-    }
-
-    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-
-    const user = await userModel.createWithProfile({
-      firstname: firstname.trim(),
-      lastname: lastname.trim(),
-      email: normalizedEmail,
-      passwordHash,
+    const { user, token } = await authService.register({
+      firstname,
+      lastname,
+      email,
       role,
+      password,
+      ipAddress: req.ip,
     });
-
-    const token = generateToken(user);
 
     return res.status(201).json({
       success: true,
@@ -95,45 +69,17 @@ const loginUser = async (req, res, next) => {
       });
     }
 
-    const user = await userModel.findByEmail(email.trim().toLowerCase());
-
-    // Message volontairement identique que l'e-mail existe ou non :
-    // sinon le formulaire permettrait de deviner quels comptes existent.
-    const invalidCredentials = {
-      success: false,
-      message: "Adresse e-mail ou mot de passe incorrect.",
-    };
-
-    if (!user) {
-      return res.status(401).json(invalidCredentials);
-    }
-
-    const passwordMatches = await bcrypt.compare(password, user.password_hash);
-
-    if (!passwordMatches) {
-      return res.status(401).json(invalidCredentials);
-    }
-
-    if (!user.is_active) {
-      return res.status(403).json({
-        success: false,
-        message: "Ce compte a été désactivé. Contactez l'administration.",
-      });
-    }
-
-    const token = generateToken(user);
+    const { user, token } = await authService.login({
+      email,
+      password,
+      ipAddress: req.ip,
+    });
 
     return res.status(200).json({
       success: true,
       message: "Connexion réussie.",
       token,
-      user: {
-        id: user.id,
-        firstname: user.firstname,
-        lastname: user.lastname,
-        email: user.email,
-        role: user.role,
-      },
+      user,
     });
   } catch (error) {
     return next(error);
@@ -186,22 +132,12 @@ const changePassword = async (req, res, next) => {
       });
     }
 
-    const record = await userModel.findPasswordHashById(req.user.id);
-
-    const currentMatches = await bcrypt.compare(
+    await authService.changePassword({
+      userId: req.user.id,
       currentPassword,
-      record.password_hash,
-    );
-
-    if (!currentMatches) {
-      return res.status(401).json({
-        success: false,
-        message: "Le mot de passe actuel est incorrect.",
-      });
-    }
-
-    const newPasswordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-    await userModel.updatePassword(req.user.id, newPasswordHash);
+      newPassword,
+      ipAddress: req.ip,
+    });
 
     return res.status(200).json({
       success: true,

@@ -24,6 +24,7 @@ function AdminDashboard() {
     { label: "Médecins", path: "/admin/medecins", icon: "＋" },
     { label: "Rendez-vous", path: "/admin/rendez-vous", icon: "□" },
     { label: "Statistiques", path: "/admin/statistiques", icon: "▥" },
+    { label: "Journaux", path: "/admin/journaux", icon: "≡" },
     { label: "Paramètres", path: "/admin/parametres", icon: "⚙" },
   ];
 

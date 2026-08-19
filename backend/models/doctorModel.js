@@ -214,10 +214,21 @@ const getBookedStartTimes = async (doctorId, scheduledOn) => {
   return rows.map((row) => row.start_time);
 };
 
+// Résout users.id à partir de doctors.id, pour notifier le bon compte.
+const getUserIdById = async (doctorId) => {
+  const [rows] = await pool.query(
+    "SELECT user_id FROM doctors WHERE id = ? LIMIT 1",
+    [doctorId],
+  );
+
+  return rows[0] ? rows[0].user_id : null;
+};
+
 module.exports = {
   searchPublic,
   getPublicById,
   findByUserId,
+  getUserIdById,
   getOwnProfile,
   updateOwnProfile,
   getWeeklyAvailabilities,

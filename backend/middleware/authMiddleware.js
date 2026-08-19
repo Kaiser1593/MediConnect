@@ -2,11 +2,19 @@
 // Protège une route : refuse la requête si le token est absent ou invalide.
 
 const { verifyToken } = require("../utils/generateToken");
+const { logSecurityEvent } = require("../utils/logger");
 
 const protect = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    logSecurityEvent({
+      userId: null,
+      eventType: "ACCESS_DENIED",
+      message: `Accès refusé (en-tête Authorization absent) sur ${req.originalUrl}.`,
+      ipAddress: req.ip,
+    });
+
     return res.status(401).json({
       success: false,
       message: "Authentification requise.",
@@ -23,6 +31,13 @@ const protect = (req, res, next) => {
 
     return next();
   } catch (error) {
+    logSecurityEvent({
+      userId: null,
+      eventType: "ACCESS_DENIED",
+      message: `Accès refusé (token invalide ou expiré) sur ${req.originalUrl}.`,
+      ipAddress: req.ip,
+    });
+
     return res.status(401).json({
       success: false,
       message: "Session expirée ou token invalide.",

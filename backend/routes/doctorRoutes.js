@@ -48,6 +48,14 @@ router.delete(
   deleteMyAvailability,
 );
 
+// Variante en chemin de GET /?specialty=..., réutilisant searchDoctors tel
+// quel. DOIT être déclarée avant "/:id", sinon Express confond "specialty"
+// avec un identifiant de médecin.
+router.get("/specialty/:id", (req, res, next) => {
+  req.query.specialty = req.params.id;
+  return searchDoctors(req, res, next);
+});
+
 router.get("/:id", getDoctorById);
 router.get("/:id/availability", getDoctorAvailability);
 

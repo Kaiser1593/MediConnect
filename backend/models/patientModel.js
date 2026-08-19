@@ -62,4 +62,19 @@ const updateProfile = async (
   }
 };
 
-module.exports = { findByUserId, getProfileByUserId, updateProfile };
+// Résout users.id à partir de patients.id, pour notifier le bon compte.
+const getUserIdById = async (patientId) => {
+  const [rows] = await pool.query(
+    "SELECT user_id FROM patients WHERE id = ? LIMIT 1",
+    [patientId],
+  );
+
+  return rows[0] ? rows[0].user_id : null;
+};
+
+module.exports = {
+  findByUserId,
+  getProfileByUserId,
+  updateProfile,
+  getUserIdById,
+};

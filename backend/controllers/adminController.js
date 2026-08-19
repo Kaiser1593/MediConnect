@@ -1,6 +1,7 @@
 // backend/controllers/adminController.js
 
 const adminModel = require("../models/adminModel");
+const { logSecurityEvent } = require("../utils/logger");
 
 const getStats = async (req, res, next) => {
   try {
@@ -127,6 +128,13 @@ const approveDoctor = async (req, res, next) => {
       });
     }
 
+    logSecurityEvent({
+      userId: req.user.id,
+      eventType: "DOCTOR_APPROVED",
+      message: `Médecin #${req.params.id} validé par l'administrateur.`,
+      ipAddress: req.ip,
+    });
+
     return res.status(200).json({
       success: true,
       message: "Le compte du médecin a été validé.",
@@ -164,9 +172,44 @@ const updateUserStatus = async (req, res, next) => {
       });
     }
 
+    logSecurityEvent({
+      userId: req.user.id,
+      eventType: "USER_STATUS_CHANGED",
+      message: `Compte #${targetId} ${is_active ? "activé" : "désactivé"} par l'administrateur.`,
+      ipAddress: req.ip,
+    });
+
     return res.status(200).json({
       success: true,
       message: is_active ? "Compte activé." : "Compte désactivé.",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const getLogs = async (req, res, next) => {
+  try {
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100);
+    const offset = (page - 1) * limit;
+    const { event_type: eventType } = req.query;
+
+    const { rows, total } = await adminModel.getSecurityLogs({
+      limit,
+      offset,
+      eventType,
+    });
+
+    return res.status(200).json({
+      success: true,
+      logs: rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     return next(error);
@@ -182,4 +225,5 @@ module.exports = {
   getStatistics,
   approveDoctor,
   updateUserStatus,
+  getLogs,
 };
