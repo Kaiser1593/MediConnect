@@ -9,8 +9,8 @@ function Navbar() {
 
       <nav className="navbar-links">
         <Link to="/">Accueil</Link>
-        <a href="#services">Services</a>
-        <a href="#fonctionnement">Fonctionnement</a>
+        <Link to="/#services">Services</Link>
+        <Link to="/#fonctionnement">Fonctionnement</Link>
         <Link to="/connexion">Connexion</Link>
         <Link to="/inscription" className="navbar-button">
           Inscription

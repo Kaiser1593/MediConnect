@@ -1,6 +1,23 @@
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 
 function Home() {
+  const location = useLocation();
+
+  // Permet aux liens "Services" / "Fonctionnement" de la navbar de
+  // fonctionner depuis n'importe quelle page : ils ramènent ici avec un
+  // hash dans l'URL, et cet effet fait défiler jusqu'à la bonne section.
+  // Se redéclenche aussi si on clique le même lien en étant déjà sur
+  // l'accueil (le hash change sans que la page ne se remonte).
+  useEffect(() => {
+    if (!location.hash) return;
+
+    document.querySelector(location.hash)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [location.hash]);
+
   return (
     <>
       <section className="hero">
@@ -43,38 +60,6 @@ function Home() {
             </div>
           </div>
         </div>
-
-        <div className="appointment-card">
-          <div className="doctor-header">
-            <div className="doctor-avatar">SM</div>
-
-            <div>
-              <h3>Dr Sarah Martin</h3>
-              <p>Médecin généraliste</p>
-            </div>
-          </div>
-
-          <div className="appointment-details">
-            <div>
-              <span>Date</span>
-              <strong>12 août 2026</strong>
-            </div>
-
-            <div>
-              <span>Horaire</span>
-              <strong>14 h 30</strong>
-            </div>
-
-            <div>
-              <span>Lieu</span>
-              <strong>Cabinet médical</strong>
-            </div>
-          </div>
-
-          <button type="button" className="confirmed-button">
-            Rendez-vous confirmé
-          </button>
-        </div>
       </section>
 
       <section id="services" className="services-section">
@@ -85,7 +70,7 @@ function Home() {
 
         <div className="cards-grid">
           <article className="service-card">
-            <div className="card-icon">P</div>
+            <div className="card-icon" aria-hidden="true">○</div>
             <h3>Espace patient</h3>
             <p>
               Recherchez un médecin et gérez facilement vos rendez-vous.
@@ -93,7 +78,7 @@ function Home() {
           </article>
 
           <article className="service-card">
-            <div className="card-icon">M</div>
+            <div className="card-icon" aria-hidden="true">✚</div>
             <h3>Espace médecin</h3>
             <p>
               Gérez vos disponibilités et consultez les demandes des patients.
@@ -101,7 +86,7 @@ function Home() {
           </article>
 
           <article className="service-card">
-            <div className="card-icon">A</div>
+            <div className="card-icon" aria-hidden="true">▥</div>
             <h3>Administration</h3>
             <p>
               Supervisez les utilisateurs et l’activité de la plateforme.
