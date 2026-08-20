@@ -7,6 +7,8 @@ const {
   loginUser,
   getCurrentUser,
   changePassword,
+  forgotPassword,
+  resetPassword,
 } = require("../controllers/authController");
 
 const { protect } = require("../middleware/authMiddleware");
@@ -63,6 +65,11 @@ const loginSchema = {
 
 router.post("/register", validateBody(registerSchema), registerUser);
 router.post("/login", validateBody(loginSchema), loginUser);
+
+// Volontairement sans validation de format, comme /login : la réponse est
+// identique quelle que soit l'adresse saisie (voir authService).
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 // Route protégée : nécessite un token valide.
 router.get("/me", protect, getCurrentUser);

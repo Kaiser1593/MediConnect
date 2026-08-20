@@ -224,6 +224,28 @@ CREATE TABLE security_logs (
 
 
 -- =====================================================
+--  10. PASSWORD_RESETS : jetons de réinitialisation de mot de passe
+--     Seul le hachage du jeton est stocké (comme un mot de passe) : le
+--     jeton en clair n'existe que dans le lien envoyé par e-mail, jamais
+--     en base. À usage unique (used_at) et à durée de vie limitée.
+-- =====================================================
+CREATE TABLE password_resets (
+  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id    INT UNSIGNED NOT NULL,
+  token_hash CHAR(64)     NOT NULL,  -- SHA-256 du jeton, en hexadécimal
+  expires_at TIMESTAMP    NOT NULL,
+  used_at    TIMESTAMP    NULL,
+  created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT fk_password_resets_user FOREIGN KEY (user_id)
+    REFERENCES users(id) ON DELETE CASCADE,
+
+  INDEX idx_password_resets_token (token_hash),
+  INDEX idx_password_resets_user (user_id)
+) ENGINE = InnoDB;
+
+
+-- =====================================================
 --  DONNÉES DE BASE : les spécialités
 -- =====================================================
 INSERT INTO specialties (name, slug, description) VALUES

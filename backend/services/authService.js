@@ -2,10 +2,16 @@
 // Logique métier de l'authentification : le contrôleur ne garde que la
 // validation du format des champs et la construction de la réponse HTTP.
 
+const crypto = require("crypto");
+
 const userModel = require("../models/userModel");
+const passwordResetModel = require("../models/passwordResetModel");
 const { generateToken } = require("../utils/generateToken");
 const { logSecurityEvent } = require("../utils/logger");
 const { hashPassword, comparePassword } = require("../utils/hashPassword");
+const emailService = require("./emailService");
+
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 heure
 
 // Les rôles qu'un visiteur peut choisir librement à l'inscription.
 // "admin" en est volontairement absent : un compte administrateur ne se
@@ -142,4 +148,78 @@ const changePassword = async ({ userId, currentPassword, newPassword, ipAddress 
   });
 };
 
-module.exports = { register, login, changePassword };
+// Message identique et succès renvoyé au contrôleur que l'adresse existe
+// ou non : révéler la différence permettrait de deviner quels e-mails
+// sont inscrits. L'échec d'envoi du mail (SMTP en panne, par exemple)
+// n'est jamais remonté au client pour la même raison ; il est seulement
+// tracé côté serveur.
+const requestPasswordReset = async ({ email, ipAddress }) => {
+  const user = await userModel.findByEmail(email.trim().toLowerCase());
+
+  if (!user) {
+    logSecurityEvent({
+      userId: null,
+      eventType: "PASSWORD_RESET_REQUESTED",
+      message: "Demande de réinitialisation sur une adresse e-mail inconnue.",
+      ipAddress,
+    });
+
+    return;
+  }
+
+  const token = crypto.randomBytes(32).toString("hex");
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+
+  await passwordResetModel.create({ userId: user.id, tokenHash, expiresAt });
+
+  const resetUrl = `${process.env.FRONTEND_URL}/reinitialisation/${token}`;
+
+  try {
+    await emailService.sendPasswordResetEmail({
+      to: user.email,
+      firstname: user.firstname,
+      resetUrl,
+    });
+  } catch (error) {
+    console.error("Échec de l'envoi de l'e-mail de réinitialisation :", error.message);
+  }
+
+  logSecurityEvent({
+    userId: user.id,
+    eventType: "PASSWORD_RESET_REQUESTED",
+    message: "Demande de réinitialisation de mot de passe.",
+    ipAddress,
+  });
+};
+
+const resetPassword = async ({ token, newPassword, ipAddress }) => {
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const record = await passwordResetModel.findValidByTokenHash(tokenHash);
+
+  if (!record) {
+    throw makeError(
+      "Ce lien de réinitialisation est invalide ou a expiré.",
+      400,
+    );
+  }
+
+  const newPasswordHash = await hashPassword(newPassword);
+  await userModel.updatePassword(record.user_id, newPasswordHash);
+  await passwordResetModel.markUsed(record.id);
+
+  logSecurityEvent({
+    userId: record.user_id,
+    eventType: "PASSWORD_RESET",
+    message: "Mot de passe réinitialisé via le lien reçu par e-mail.",
+    ipAddress,
+  });
+};
+
+module.exports = {
+  register,
+  login,
+  changePassword,
+  requestPasswordReset,
+  resetPassword,
+};

@@ -7,6 +7,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 import PatientDashboard from "./pages/patient/PatientDashboard";
 import DoctorSearch from "./pages/patient/DoctorSearch";
 import AppointmentBooking from "./pages/patient/AppointmentBooking";
@@ -65,6 +67,24 @@ function App() {
           element={
             <PublicPage>
               <Register />
+            </PublicPage>
+          }
+        />
+
+        <Route
+          path="/mot-de-passe-oublie"
+          element={
+            <PublicPage>
+              <ForgotPassword />
+            </PublicPage>
+          }
+        />
+
+        <Route
+          path="/reinitialisation/:token"
+          element={
+            <PublicPage>
+              <ResetPassword />
             </PublicPage>
           }
         />

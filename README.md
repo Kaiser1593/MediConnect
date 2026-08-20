@@ -69,6 +69,27 @@ Le backend nécessite un fichier `backend/.env` (voir les variables
 attendues dans `backend/config/database.js` et `backend/utils/generateToken.js`)
 et une base MySQL locale chargée avec `database/mediconnect.sql`.
 
+## Réinitialisation de mot de passe (envoi d'e-mail)
+
+La fonctionnalité "Mot de passe oublié" envoie un vrai e-mail via SMTP.
+Variables à renseigner dans `backend/.env` (voir `.env.example`) :
+
+```
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=ton-adresse@gmail.com
+SMTP_PASSWORD=mot-de-passe-d-application-16-caracteres
+SMTP_FROM=ton-adresse@gmail.com
+FRONTEND_URL=http://localhost:5173
+```
+
+`SMTP_PASSWORD` est un **mot de passe d'application** Gmail (généré sur
+`myaccount.google.com/apppasswords`), jamais le mot de passe du compte
+Google lui-même. Sans ces variables, la demande de réinitialisation
+continue de fonctionner (même réponse, même comportement) mais l'e-mail
+n'est pas réellement envoyé : l'échec est seulement tracé dans les logs
+du serveur, jamais renvoyé au client.
+
 ## Tests
 
 ```

@@ -148,9 +148,77 @@ const changePassword = async (req, res, next) => {
   }
 };
 
+// Toujours le même message, que l'adresse existe ou non, et que l'envoi
+// de l'e-mail ait réussi ou non côté serveur (voir authService) : sinon
+// la réponse permettrait de deviner quels comptes existent.
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "L'adresse e-mail est obligatoire.",
+      });
+    }
+
+    await authService.requestPasswordReset({ email, ipAddress: req.ip });
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Si un compte existe avec cette adresse, un e-mail de réinitialisation vient d'être envoyé.",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token, newPassword, confirmPassword } = req.body;
+
+    if (!token || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Tous les champs sont obligatoires.",
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Le nouveau mot de passe doit contenir au moins 8 caractères.",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Les mots de passe ne correspondent pas.",
+      });
+    }
+
+    await authService.resetPassword({
+      token,
+      newPassword,
+      ipAddress: req.ip,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Votre mot de passe a été réinitialisé. Vous pouvez vous connecter.",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getCurrentUser,
   changePassword,
+  forgotPassword,
+  resetPassword,
 };
