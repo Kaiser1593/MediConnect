@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import api from "../../services/api";
@@ -35,9 +36,61 @@ const formatTime = (time) => time.slice(0, 5).replace(":", " h ");
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
-function AppointmentRow({ appointment, onCancel, isCancelling }) {
+const renderStars = (rating) => "★".repeat(rating) + "☆".repeat(5 - rating);
+
+function ReviewForm({ rating, onRatingChange, comment, onCommentChange, onSubmit, onCancel, isSubmitting, error }) {
+  return (
+    <div className="review-form">
+      {error && (
+        <div className="form-message error" role="alert">
+          {error}
+        </div>
+      )}
+
+      <div className="star-picker">
+        {[1, 2, 3, 4, 5].map((value) => (
+          <button
+            type="button"
+            key={value}
+            onClick={() => onRatingChange(value)}
+            aria-label={`${value} étoile(s)`}
+          >
+            {value <= rating ? "★" : "☆"}
+          </button>
+        ))}
+      </div>
+
+      <div className="form-group">
+        <textarea
+          placeholder="Votre avis sur cette consultation (facultatif)"
+          rows="3"
+          value={comment}
+          onChange={(event) => onCommentChange(event.target.value)}
+        />
+      </div>
+
+      <div className="row-actions">
+        <button
+          type="button"
+          className="primary-button"
+          disabled={rating === 0 || isSubmitting}
+          onClick={onSubmit}
+        >
+          {isSubmitting ? "Envoi…" : "Envoyer l'avis"}
+        </button>
+
+        <button type="button" className="outline-button" onClick={onCancel}>
+          Annuler
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AppointmentRow({ appointment, onCancel, isCancelling, onOpenReview, isReviewFormOpen }) {
   const canCancel =
     appointment.status === "pending" || appointment.status === "confirmed";
+  const canReview = appointment.status === "completed" && !appointment.review_id;
 
   return (
     <div className="appointment-row">
@@ -61,18 +114,39 @@ function AppointmentRow({ appointment, onCancel, isCancelling }) {
         {STATUS_LABELS[appointment.status]}
       </span>
 
-      {canCancel ? (
-        <button
-          type="button"
-          className="cancel-button"
-          disabled={isCancelling}
-          onClick={() => onCancel(appointment.id)}
-        >
-          {isCancelling ? "Annulation…" : "Annuler"}
-        </button>
-      ) : (
-        <span />
+      {canCancel && (
+        <div className="row-actions">
+          <Link
+            to={`/patient/reservation/${appointment.doctor_id}?replanifier=${appointment.id}`}
+            className="outline-button"
+          >
+            Replanifier
+          </Link>
+
+          <button
+            type="button"
+            className="cancel-button"
+            disabled={isCancelling}
+            onClick={() => onCancel(appointment.id)}
+          >
+            {isCancelling ? "Annulation…" : "Annuler"}
+          </button>
+        </div>
       )}
+
+      {appointment.review_id && (
+        <span className="review-rating-display">
+          {renderStars(appointment.review_rating)}
+        </span>
+      )}
+
+      {canReview && !isReviewFormOpen && (
+        <button type="button" className="outline-button" onClick={() => onOpenReview(appointment.id)}>
+          Laisser un avis
+        </button>
+      )}
+
+      {!canCancel && !appointment.review_id && !canReview && <span />}
     </div>
   );
 }
@@ -82,6 +156,12 @@ function MyAppointments() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [cancellingId, setCancellingId] = useState(null);
+
+  const [reviewFormId, setReviewFormId] = useState(null);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState("");
 
   useEffect(() => {
     const loadAppointments = async () => {
@@ -123,6 +203,46 @@ function MyAppointments() {
       );
     } finally {
       setCancellingId(null);
+    }
+  };
+
+  const handleOpenReview = (appointmentId) => {
+    setReviewFormId(appointmentId);
+    setReviewRating(0);
+    setReviewComment("");
+    setReviewError("");
+  };
+
+  const handleCancelReview = () => {
+    setReviewFormId(null);
+  };
+
+  const handleSubmitReview = async (appointmentId) => {
+    setIsSubmittingReview(true);
+    setReviewError("");
+
+    try {
+      const response = await api.post("/reviews", {
+        appointmentId,
+        rating: reviewRating,
+        comment: reviewComment.trim() || undefined,
+      });
+
+      setAppointments((previous) =>
+        previous.map((appointment) =>
+          appointment.id === appointmentId
+            ? { ...appointment, review_id: response.data.review.id, review_rating: reviewRating }
+            : appointment,
+        ),
+      );
+      setReviewFormId(null);
+    } catch (submitError) {
+      setReviewError(
+        submitError.response?.data?.message ||
+          "L'envoi de l'avis a échoué. Veuillez réessayer.",
+      );
+    } finally {
+      setIsSubmittingReview(false);
     }
   };
 
@@ -194,12 +314,28 @@ function MyAppointments() {
             ) : (
               <div className="appointment-list">
                 {past.map((appointment) => (
-                  <AppointmentRow
-                    key={appointment.id}
-                    appointment={appointment}
-                    onCancel={handleCancel}
-                    isCancelling={cancellingId === appointment.id}
-                  />
+                  <div key={appointment.id}>
+                    <AppointmentRow
+                      appointment={appointment}
+                      onCancel={handleCancel}
+                      isCancelling={cancellingId === appointment.id}
+                      onOpenReview={handleOpenReview}
+                      isReviewFormOpen={reviewFormId === appointment.id}
+                    />
+
+                    {reviewFormId === appointment.id && (
+                      <ReviewForm
+                        rating={reviewRating}
+                        onRatingChange={setReviewRating}
+                        comment={reviewComment}
+                        onCommentChange={setReviewComment}
+                        onSubmit={() => handleSubmitReview(appointment.id)}
+                        onCancel={handleCancelReview}
+                        isSubmitting={isSubmittingReview}
+                        error={reviewError}
+                      />
+                    )}
+                  </div>
                 ))}
               </div>
             )}

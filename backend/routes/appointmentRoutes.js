@@ -7,6 +7,7 @@ const {
   getMyDashboard,
   listMyAppointments,
   cancelAppointment,
+  rescheduleAppointment,
   confirmAppointment,
   completeAppointment,
 } = require("../controllers/appointmentController");
@@ -58,6 +59,29 @@ router.patch(
   protect,
   authorize("patient", "doctor"),
   cancelAppointment,
+);
+
+// Réservée au patient, comme la réservation initiale : annule puis
+// recrée le rendez-vous au nouveau créneau (voir appointmentService).
+router.patch(
+  "/:id/reschedule",
+  protect,
+  authorize("patient"),
+  validateBody({
+    scheduledOn: {
+      required: true,
+      requiredMessage: "La date et l'horaire sont obligatoires.",
+      validate: isValidDate,
+      invalidMessage: "La date doit être au format AAAA-MM-JJ.",
+    },
+    startTime: {
+      required: true,
+      requiredMessage: "La date et l'horaire sont obligatoires.",
+      validate: isValidTime,
+      invalidMessage: "L'horaire doit être au format HH:MM.",
+    },
+  }),
+  rescheduleAppointment,
 );
 
 // Confirmation et clôture sont des actions réservées au médecin.

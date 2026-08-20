@@ -17,6 +17,7 @@ const {
   deleteMyAvailability,
   getMyPatients,
 } = require("../controllers/doctorController");
+const { getDoctorReviews } = require("../controllers/reviewController");
 const { protect } = require("../middleware/authMiddleware");
 const { authorize } = require("../middleware/roleMiddleware");
 
@@ -58,5 +59,6 @@ router.get("/specialty/:id", (req, res, next) => {
 
 router.get("/:id", getDoctorById);
 router.get("/:id/availability", getDoctorAvailability);
+router.get("/:id/reviews", getDoctorReviews);
 
 module.exports = router;

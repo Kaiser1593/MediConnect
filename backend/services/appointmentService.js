@@ -284,6 +284,99 @@ const cancelAppointment = async (user, appointmentId) => {
   });
 };
 
+// Replanifie un rendez-vous : annule l'ancien puis en recrée un nouveau au
+// créneau demandé. Cette approche (plutôt qu'un simple UPDATE de la date)
+// préserve la contrainte UNIQUE (doctor_id, scheduled_on, start_time) en
+// réutilisant exactement la même logique de réservation/réactivation que
+// bookAppointment. Réservé au patient, comme la réservation initiale.
+const rescheduleAppointment = async (user, appointmentId, { scheduledOn, startTime, reason }) => {
+  const appointment = await appointmentModel.findById(appointmentId);
+
+  if (!appointment) {
+    throw makeError("Rendez-vous introuvable.", 404);
+  }
+
+  const patient = await patientModel.findByUserId(user.id);
+
+  if (!patient || patient.id !== appointment.patient_id) {
+    throw makeError("Ce rendez-vous ne vous appartient pas.", 403);
+  }
+
+  if (appointment.status !== "pending" && appointment.status !== "confirmed") {
+    throw makeError("Ce rendez-vous ne peut plus être replanifié.", 400);
+  }
+
+  const doctor = await doctorModel.getPublicById(appointment.doctor_id);
+
+  if (!doctor) {
+    throw makeError("Médecin introuvable ou non disponible.", 404);
+  }
+
+  // Validée AVANT d'annuler l'ancien rendez-vous : en cas de créneau
+  // indisponible, le patient garde son rendez-vous d'origine plutôt que
+  // de se retrouver sans rien après un échec de replanification.
+  const availableSlots = await computeAvailableSlots(doctor, scheduledOn);
+  const normalizedStartTime = startTime.length === 5 ? `${startTime}:00` : startTime;
+
+  if (!availableSlots.includes(normalizedStartTime.slice(0, 5))) {
+    throw makeError("Ce créneau n'est plus disponible.", 409);
+  }
+
+  const startMinutes = parseTimeToMinutes(normalizedStartTime);
+  const endTime = minutesToTime(startMinutes + doctor.slot_duration);
+  const doctorId = appointment.doctor_id;
+
+  await appointmentModel.cancel(appointmentId);
+
+  const existing = await appointmentModel.findByDoctorSlot(
+    doctorId,
+    scheduledOn,
+    normalizedStartTime,
+  );
+
+  const newAppointment = existing
+    ? await (async () => {
+        await appointmentModel.reactivate(existing.id, {
+          patientId: patient.id,
+          endTime,
+          reason,
+        });
+
+        return {
+          id: existing.id,
+          patientId: patient.id,
+          doctorId,
+          scheduledOn,
+          startTime: normalizedStartTime,
+          endTime,
+          reason: reason || null,
+          status: "pending",
+        };
+      })()
+    : await appointmentModel.create({
+        patientId: patient.id,
+        doctorId,
+        scheduledOn,
+        startTime: normalizedStartTime,
+        endTime,
+        reason,
+      });
+
+  const doctorUserId = await doctorModel.getUserIdById(doctorId);
+
+  notificationService.notifyAppointmentRescheduled({
+    patientUserId: user.id,
+    doctorUserId,
+    doctorName: doctor.full_name,
+    oldScheduledOn: appointment.scheduled_on.toISOString().slice(0, 10),
+    oldStartTime: appointment.start_time,
+    scheduledOn,
+    startTime: normalizedStartTime,
+  });
+
+  return newAppointment;
+};
+
 // Récupère un rendez-vous et vérifie qu'il appartient bien au médecin
 // connecté. Réutilisé par confirmAppointment et completeAppointment.
 const getOwnedDoctorAppointment = async (userId, appointmentId) => {
@@ -368,6 +461,7 @@ module.exports = {
   getDoctorDashboard,
   listMyAppointments,
   cancelAppointment,
+  rescheduleAppointment,
   confirmAppointment,
   completeAppointment,
   listMyPatients,

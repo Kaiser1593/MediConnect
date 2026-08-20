@@ -10,12 +10,49 @@ const ROLE_LABELS = {
   admin: "Administrateur",
 };
 
+const ACTIVITY_ICONS = {
+  LOGIN_SUCCESS: "○",
+  LOGIN_FAILED: "!",
+  REGISTER: "＋",
+  PASSWORD_CHANGED: "⚙",
+  ACCESS_DENIED: "!",
+  DOCTOR_APPROVED: "✓",
+  USER_STATUS_CHANGED: "○",
+};
+
+const ACTIVITY_TITLES = {
+  LOGIN_SUCCESS: "Connexion",
+  LOGIN_FAILED: "Connexion échouée",
+  REGISTER: "Nouvel utilisateur",
+  PASSWORD_CHANGED: "Mot de passe modifié",
+  ACCESS_DENIED: "Accès refusé",
+  DOCTOR_APPROVED: "Médecin validé",
+  USER_STATUS_CHANGED: "Statut modifié",
+};
+
 const formatDate = (isoDate) =>
   new Date(isoDate).toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   });
+
+// Reprend les vrais événements de security_logs plutôt que des exemples
+// écrits en dur : les horodatages y sont réels, donc affichés en relatif.
+const formatRelativeTime = (isoDate) => {
+  const diffMinutes = Math.max(
+    Math.round((Date.now() - new Date(isoDate).getTime()) / 60000),
+    0,
+  );
+
+  if (diffMinutes < 1) return "à l'instant";
+  if (diffMinutes < 60) return `il y a ${diffMinutes} min`;
+
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `il y a ${diffHours} h`;
+
+  return `il y a ${Math.round(diffHours / 24)} j`;
+};
 
 function AdminDashboard() {
   const menu = [
@@ -31,6 +68,7 @@ function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [pendingDoctors, setPendingDoctors] = useState([]);
+  const [recentLogs, setRecentLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [approvingId, setApprovingId] = useState(null);
@@ -45,16 +83,18 @@ function AdminDashboard() {
       setError("");
 
       try {
-        const [statsResponse, usersResponse, pendingResponse] =
+        const [statsResponse, usersResponse, pendingResponse, logsResponse] =
           await Promise.all([
             api.get("/admin/stats"),
             api.get("/admin/users", { params: { limit: 5 } }),
             api.get("/admin/doctors/pending"),
+            api.get("/admin/logs", { params: { limit: 4 } }),
           ]);
 
         setStats(statsResponse.data.stats);
         setUsers(usersResponse.data.users);
         setPendingDoctors(pendingResponse.data.doctors);
+        setRecentLogs(logsResponse.data.logs);
       } catch {
         setError("Impossible de charger les données du tableau de bord.");
       } finally {
@@ -175,39 +215,26 @@ function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="activity-list">
-                <div>
-                  <span className="activity-icon">＋</span>
-                  <p>
-                    <strong>Nouveau médecin inscrit</strong>
-                    <small>Dr Lucas Bernard · il y a 12 min</small>
-                  </p>
+              {recentLogs.length === 0 ? (
+                <p>Aucune activité récente.</p>
+              ) : (
+                <div className="activity-list">
+                  {recentLogs.map((log) => (
+                    <div key={log.id}>
+                      <span className="activity-icon">
+                        {ACTIVITY_ICONS[log.event_type] || "○"}
+                      </span>
+                      <p>
+                        <strong>{ACTIVITY_TITLES[log.event_type] || log.event_type}</strong>
+                        <small>
+                          {log.firstname ? `${log.firstname} ${log.lastname} · ` : ""}
+                          {formatRelativeTime(log.created_at)}
+                        </small>
+                      </p>
+                    </div>
+                  ))}
                 </div>
-
-                <div>
-                  <span className="activity-icon">□</span>
-                  <p>
-                    <strong>Nouveau rendez-vous</strong>
-                    <small>Jean Dupont · il y a 28 min</small>
-                  </p>
-                </div>
-
-                <div>
-                  <span className="activity-icon">✓</span>
-                  <p>
-                    <strong>Compte médecin validé</strong>
-                    <small>Dr Emma Robert · il y a 1 h</small>
-                  </p>
-                </div>
-
-                <div>
-                  <span className="activity-icon">○</span>
-                  <p>
-                    <strong>Nouvel utilisateur</strong>
-                    <small>Sophie Leroy · il y a 2 h</small>
-                  </p>
-                </div>
-              </div>
+              )}
             </aside>
           </section>
 

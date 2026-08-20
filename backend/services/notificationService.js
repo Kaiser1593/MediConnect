@@ -79,6 +79,38 @@ const notifyAppointmentCancelled = async ({
   });
 };
 
+// À la replanification : le patient et le médecin sont tous deux informés,
+// contrairement à la confirmation/annulation qui n'informe que l'autre
+// partie (ici c'est le patient qui est à l'initiative, mais le nouveau
+// créneau concerne aussi bien le médecin).
+const notifyAppointmentRescheduled = async ({
+  patientUserId,
+  doctorUserId,
+  doctorName,
+  oldScheduledOn,
+  oldStartTime,
+  scheduledOn,
+  startTime,
+}) => {
+  const oldWhen = formatWhen(oldScheduledOn, oldStartTime);
+  const newWhen = formatWhen(scheduledOn, startTime);
+
+  await Promise.all([
+    notify({
+      userId: patientUserId,
+      type: "appointment_rescheduled",
+      title: "Rendez-vous replanifié",
+      message: `Votre rendez-vous avec ${doctorName} du ${oldWhen} a été déplacé au ${newWhen}.`,
+    }),
+    notify({
+      userId: doctorUserId,
+      type: "appointment_rescheduled",
+      title: "Rendez-vous replanifié",
+      message: `Un rendez-vous du ${oldWhen} a été déplacé au ${newWhen} par le patient.`,
+    }),
+  ]);
+};
+
 // Notifications de l'utilisateur connecté, pour la cloche de notifications.
 const listMyNotifications = (userId) => notificationModel.getByUserId(userId);
 
@@ -91,6 +123,7 @@ module.exports = {
   notifyAppointmentCreated,
   notifyAppointmentConfirmed,
   notifyAppointmentCancelled,
+  notifyAppointmentRescheduled,
   listMyNotifications,
   markNotificationAsRead,
 };

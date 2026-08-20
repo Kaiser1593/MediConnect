@@ -141,10 +141,6 @@ function Login() {
                 <input type="checkbox" />
                 <span>Se souvenir de moi</span>
               </label>
-
-              <button type="button" className="forgot-password">
-                Mot de passe oublié ?
-              </button>
             </div>
 
             <button

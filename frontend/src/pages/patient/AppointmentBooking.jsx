@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import api from "../../services/api";
@@ -31,8 +31,15 @@ const toIsoDate = (date) => {
 
 const formatTime = (time) => time.replace(":", " h ");
 
+const renderStars = (rating) => "★".repeat(rating) + "☆".repeat(5 - rating);
+
 function AppointmentBooking() {
   const { doctorId } = useParams();
+  const [searchParams] = useSearchParams();
+  // Présent uniquement quand on arrive depuis "Replanifier" (Mes rendez-vous) :
+  // même parcours de sélection date/horaire, mais on modifie un rendez-vous
+  // existant au lieu d'en créer un nouveau.
+  const rescheduleId = searchParams.get("replanifier");
 
   const dateOptions = useMemo(() => {
     return Array.from({ length: 7 }, (_, index) => {
@@ -51,6 +58,8 @@ function AppointmentBooking() {
   const [doctor, setDoctor] = useState(null);
   const [isLoadingDoctor, setIsLoadingDoctor] = useState(true);
   const [doctorError, setDoctorError] = useState("");
+
+  const [reviews, setReviews] = useState([]);
 
   const [selectedDate, setSelectedDate] = useState(dateOptions[0].iso);
   const [slots, setSlots] = useState([]);
@@ -83,6 +92,19 @@ function AppointmentBooking() {
   }, [doctorId]);
 
   useEffect(() => {
+    const loadReviews = async () => {
+      try {
+        const response = await api.get(`/doctors/${doctorId}/reviews`);
+        setReviews(response.data.reviews);
+      } catch {
+        setReviews([]);
+      }
+    };
+
+    loadReviews();
+  }, [doctorId]);
+
+  useEffect(() => {
     const loadSlots = async () => {
       setIsLoadingSlots(true);
       setSelectedTime(null);
@@ -111,29 +133,41 @@ function AppointmentBooking() {
       : REASON_LABELS[reasonType];
 
     try {
-      await api.post("/appointments", {
-        doctorId: Number(doctorId),
-        scheduledOn: selectedDate,
-        startTime: selectedTime,
-        reason,
-      });
+      if (rescheduleId) {
+        await api.patch(`/appointments/${rescheduleId}/reschedule`, {
+          scheduledOn: selectedDate,
+          startTime: selectedTime,
+          reason,
+        });
+      } else {
+        await api.post("/appointments", {
+          doctorId: Number(doctorId),
+          scheduledOn: selectedDate,
+          startTime: selectedTime,
+          reason,
+        });
+      }
 
       setConfirmed({ date: selectedDate, time: selectedTime });
     } catch (error) {
       setSubmitError(
         error.response?.data?.message ||
-          "La réservation a échoué. Veuillez réessayer.",
+          (rescheduleId
+            ? "La replanification a échoué. Veuillez réessayer."
+            : "La réservation a échoué. Veuillez réessayer."),
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const pageTitle = rescheduleId ? "Replanifier le rendez-vous" : "Réserver un rendez-vous";
+
   if (isLoadingDoctor) {
     return (
       <DashboardLayout
         role="Espace patient"
-        title="Réserver un rendez-vous"
+        title={pageTitle}
         subtitle="Choisissez une date et un horaire disponibles."
         menu={menu}
       >
@@ -146,7 +180,7 @@ function AppointmentBooking() {
     return (
       <DashboardLayout
         role="Espace patient"
-        title="Réserver un rendez-vous"
+        title={pageTitle}
         subtitle="Choisissez une date et un horaire disponibles."
         menu={menu}
       >
@@ -162,13 +196,14 @@ function AppointmentBooking() {
   return (
     <DashboardLayout
       role="Espace patient"
-      title="Réserver un rendez-vous"
+      title={pageTitle}
       subtitle="Choisissez une date et un horaire disponibles."
       menu={menu}
     >
       {confirmed && (
         <div className="booking-success">
-          Rendez-vous confirmé avec le {doctor.full_name} pour le{" "}
+          {rescheduleId ? "Rendez-vous replanifié avec le" : "Rendez-vous confirmé avec le"}{" "}
+          {doctor.full_name} pour le{" "}
           {capitalize(
             new Date(`${confirmed.date}T00:00:00`).toLocaleDateString("fr-FR", {
               day: "numeric",
@@ -258,6 +293,29 @@ function AppointmentBooking() {
                 onChange={(event) => setNote(event.target.value)}
               />
             </div>
+
+            {reviews.length > 0 && (
+              <div className="booking-section">
+                <h3>Avis des patients</h3>
+
+                <div className="review-list">
+                  {reviews.map((review) => (
+                    <div className="review-item" key={review.id}>
+                      <div>
+                        <strong>
+                          {review.firstname} {review.lastname[0]}.
+                        </strong>
+                        <span className="review-rating-display">
+                          {renderStars(review.rating)}
+                        </span>
+                      </div>
+
+                      {review.comment && <p>{review.comment}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </article>
 
           <aside className="dashboard-panel booking-summary">
@@ -311,7 +369,11 @@ function AppointmentBooking() {
               onClick={handleConfirm}
               disabled={!selectedTime || isSubmitting}
             >
-              {isSubmitting ? "Confirmation…" : "Confirmer le rendez-vous"}
+              {isSubmitting
+                ? "Confirmation…"
+                : rescheduleId
+                  ? "Replanifier le rendez-vous"
+                  : "Confirmer le rendez-vous"}
             </button>
 
             <p>Aucun paiement ne sera effectué lors de la réservation.</p>

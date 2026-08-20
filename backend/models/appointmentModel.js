@@ -172,16 +172,20 @@ const getDoctorTodayAppointments = async (doctorId, today) => {
 
 // Tous les rendez-vous d'un patient (page "Mes rendez-vous"), du plus
 // récent au plus ancien : le frontend distingue à venir / passés lui-même.
+// doctor_id sert à replanifier (lien vers la page de réservation), review_id
+// à savoir si un avis a déjà été laissé sur un rendez-vous terminé.
 const getAllByPatientId = async (patientId) => {
   const [rows] = await pool.query(
-    `SELECT a.id, a.scheduled_on, a.start_time, a.status, a.reason,
+    `SELECT a.id, a.scheduled_on, a.start_time, a.status, a.reason, a.doctor_id,
             u.firstname, u.lastname,
             CONCAT('Dr ', u.firstname, ' ', u.lastname) AS doctor_name,
-            s.name AS specialty
+            s.name AS specialty,
+            r.id AS review_id, r.rating AS review_rating
      FROM appointments a
      JOIN doctors d ON d.id = a.doctor_id
      JOIN users u   ON u.id = d.user_id
      LEFT JOIN specialties s ON s.id = d.specialty_id
+     LEFT JOIN reviews r ON r.appointment_id = a.id
      WHERE a.patient_id = ?
      ORDER BY a.scheduled_on DESC, a.start_time DESC`,
     [patientId],

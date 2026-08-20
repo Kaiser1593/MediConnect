@@ -67,6 +67,33 @@ const cancelAppointment = async (req, res, next) => {
   }
 };
 
+const rescheduleAppointment = async (req, res, next) => {
+  try {
+    const { scheduledOn, startTime, reason } = req.body;
+
+    if (!scheduledOn || !startTime) {
+      return res.status(400).json({
+        success: false,
+        message: "La date et l'horaire sont obligatoires.",
+      });
+    }
+
+    const appointment = await appointmentService.rescheduleAppointment(
+      req.user,
+      req.params.id,
+      { scheduledOn, startTime, reason },
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Le rendez-vous a été replanifié.",
+      appointment,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 const confirmAppointment = async (req, res, next) => {
   try {
     await appointmentService.confirmAppointment(req.user, req.params.id);
@@ -104,6 +131,7 @@ module.exports = {
   getMyDashboard,
   listMyAppointments,
   cancelAppointment,
+  rescheduleAppointment,
   confirmAppointment,
   completeAppointment,
 };
