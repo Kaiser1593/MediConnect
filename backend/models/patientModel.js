@@ -1,37 +1,47 @@
 // backend/models/patientModel.js
-// Toutes les requêtes SQL touchant à la table patients.
+// Toutes les requêtes SQL touchant à la table patients (colonnes en
+// français : utilisateur_id, date_naissance, genre, adresse, ville,
+// code_postal). Ce modèle traduit à la frontière : le reste du code
+// applicatif continue de manipuler les mêmes noms qu'avant ce renommage.
 
 const { pool } = require("../config/database");
+const { GENDER_TO_DB, GENDER_FROM_DB } = require("../utils/enumMapping");
 
-// Résout la fiche patient à partir de l'identifiant users.id (celui du token).
+// Résout la fiche patient à partir de l'identifiant utilisateurs.id (celui du token).
 const findByUserId = async (userId) => {
   const [rows] = await pool.query(
-    "SELECT id, user_id FROM patients WHERE user_id = ? LIMIT 1",
+    "SELECT id, utilisateur_id AS user_id FROM patients WHERE utilisateur_id = ? LIMIT 1",
     [userId],
   );
 
   return rows[0] || null;
 };
 
-// Profil complet, pour la page "Mon profil" : infos de compte (users)
+// Profil complet, pour la page "Mon profil" : infos de compte (utilisateurs)
 // et infos patient (patients) réunies dans une seule ligne.
 const getProfileByUserId = async (userId) => {
   const [rows] = await pool.query(
-    `SELECT u.id, u.firstname, u.lastname, u.email, u.phone,
-            p.birth_date, p.gender, p.address, p.city, p.postal_code
-     FROM users u
-     JOIN patients p ON p.user_id = u.id
+    `SELECT u.id, u.prenom AS firstname, u.nom AS lastname, u.email,
+            u.telephone AS phone,
+            p.date_naissance AS birth_date, p.genre, p.adresse AS address,
+            p.ville AS city, p.code_postal AS postal_code
+     FROM utilisateurs u
+     JOIN patients p ON p.utilisateur_id = u.id
      WHERE u.id = ?
      LIMIT 1`,
     [userId],
   );
 
-  return rows[0] || null;
+  const row = rows[0];
+  if (!row) return null;
+
+  const { genre, ...rest } = row;
+  return { ...rest, gender: genre ? GENDER_FROM_DB[genre] : null };
 };
 
-// Met à jour le compte (users) et la fiche patient (patients) ensemble,
-// dans une transaction : les deux tables restent cohérentes ou aucune
-// des deux n'est modifiée.
+// Met à jour le compte (utilisateurs) et la fiche patient (patients)
+// ensemble, dans une transaction : les deux tables restent cohérentes
+// ou aucune des deux n'est modifiée.
 const updateProfile = async (
   userId,
   { firstname, lastname, phone, birthDate, gender, address, city, postalCode },
@@ -42,15 +52,22 @@ const updateProfile = async (
     await connection.beginTransaction();
 
     await connection.query(
-      "UPDATE users SET firstname = ?, lastname = ?, phone = ? WHERE id = ?",
+      "UPDATE utilisateurs SET prenom = ?, nom = ?, telephone = ? WHERE id = ?",
       [firstname, lastname, phone || null, userId],
     );
 
     await connection.query(
       `UPDATE patients
-       SET birth_date = ?, gender = ?, address = ?, city = ?, postal_code = ?
-       WHERE user_id = ?`,
-      [birthDate || null, gender || null, address || null, city || null, postalCode || null, userId],
+       SET date_naissance = ?, genre = ?, adresse = ?, ville = ?, code_postal = ?
+       WHERE utilisateur_id = ?`,
+      [
+        birthDate || null,
+        gender ? GENDER_TO_DB[gender] : null,
+        address || null,
+        city || null,
+        postalCode || null,
+        userId,
+      ],
     );
 
     await connection.commit();
@@ -62,14 +79,14 @@ const updateProfile = async (
   }
 };
 
-// Résout users.id à partir de patients.id, pour notifier le bon compte.
+// Résout utilisateurs.id à partir de patients.id, pour notifier le bon compte.
 const getUserIdById = async (patientId) => {
   const [rows] = await pool.query(
-    "SELECT user_id FROM patients WHERE id = ? LIMIT 1",
+    "SELECT utilisateur_id FROM patients WHERE id = ? LIMIT 1",
     [patientId],
   );
 
-  return rows[0] ? rows[0].user_id : null;
+  return rows[0] ? rows[0].utilisateur_id : null;
 };
 
 module.exports = {

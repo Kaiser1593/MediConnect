@@ -144,6 +144,7 @@ const bookAppointment = async ({
     notificationService.notifyAppointmentCreated({
       patientUserId,
       doctorUserId,
+      appointmentId: existing.id,
       doctorName: doctor.full_name,
       scheduledOn,
       startTime: normalizedStartTime,
@@ -173,6 +174,7 @@ const bookAppointment = async ({
   notificationService.notifyAppointmentCreated({
     patientUserId,
     doctorUserId,
+    appointmentId: created.id,
     doctorName: doctor.full_name,
     scheduledOn,
     startTime: normalizedStartTime,
@@ -279,6 +281,7 @@ const cancelAppointment = async (user, appointmentId) => {
 
   notificationService.notifyAppointmentCancelled({
     recipientUserId,
+    appointmentId,
     scheduledOn: appointment.scheduled_on.toISOString().slice(0, 10),
     startTime: appointment.start_time,
   });
@@ -367,6 +370,7 @@ const rescheduleAppointment = async (user, appointmentId, { scheduledOn, startTi
   notificationService.notifyAppointmentRescheduled({
     patientUserId: user.id,
     doctorUserId,
+    appointmentId: newAppointment.id,
     doctorName: doctor.full_name,
     oldScheduledOn: appointment.scheduled_on.toISOString().slice(0, 10),
     oldStartTime: appointment.start_time,
@@ -409,6 +413,7 @@ const confirmAppointment = async (user, appointmentId) => {
 
   notificationService.notifyAppointmentConfirmed({
     patientUserId,
+    appointmentId,
     scheduledOn: appointment.scheduled_on.toISOString().slice(0, 10),
     startTime: appointment.start_time,
   });

@@ -1,5 +1,5 @@
 // backend/models/reviewModel.js
-// Toutes les requêtes SQL touchant à la table reviews.
+// Toutes les requêtes SQL touchant à la table avis.
 
 const { pool } = require("../config/database");
 
@@ -8,7 +8,7 @@ const { pool } = require("../config/database");
 // qu'une erreur SQL brute.
 const findByAppointmentId = async (appointmentId) => {
   const [rows] = await pool.query(
-    "SELECT id FROM reviews WHERE appointment_id = ? LIMIT 1",
+    "SELECT id FROM avis WHERE rendez_vous_id = ? LIMIT 1",
     [appointmentId],
   );
 
@@ -17,7 +17,7 @@ const findByAppointmentId = async (appointmentId) => {
 
 const create = async ({ appointmentId, patientId, doctorId, rating, comment }) => {
   const [result] = await pool.query(
-    `INSERT INTO reviews (appointment_id, patient_id, doctor_id, rating, comment)
+    `INSERT INTO avis (rendez_vous_id, patient_id, medecin_id, note, commentaire)
      VALUES (?, ?, ?, ?, ?)`,
     [appointmentId, patientId, doctorId, rating, comment || null],
   );
@@ -35,12 +35,13 @@ const create = async ({ appointmentId, patientId, doctorId, rating, comment }) =
 // Avis publics d'un médecin, les plus récents d'abord.
 const getByDoctorId = async (doctorId) => {
   const [rows] = await pool.query(
-    `SELECT r.id, r.rating, r.comment, r.created_at, u.firstname, u.lastname
-     FROM reviews r
-     JOIN patients p ON p.id = r.patient_id
-     JOIN users u    ON u.id = p.user_id
-     WHERE r.doctor_id = ?
-     ORDER BY r.created_at DESC`,
+    `SELECT a.id, a.note AS rating, a.commentaire AS comment,
+            a.date_creation AS created_at, u.prenom AS firstname, u.nom AS lastname
+     FROM avis a
+     JOIN patients p ON p.id = a.patient_id
+     JOIN utilisateurs u ON u.id = p.utilisateur_id
+     WHERE a.medecin_id = ?
+     ORDER BY a.date_creation DESC`,
     [doctorId],
   );
 

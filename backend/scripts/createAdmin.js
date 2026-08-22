@@ -36,7 +36,7 @@ const run = async () => {
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
   const [existingRows] = await pool.query(
-    "SELECT id, role FROM users WHERE email = ? LIMIT 1",
+    "SELECT id, role FROM utilisateurs WHERE email = ? LIMIT 1",
     [normalizedEmail],
   );
 
@@ -44,14 +44,14 @@ const run = async () => {
 
   if (existing) {
     await pool.query(
-      `UPDATE users
-       SET role = 'admin', password_hash = ?, firstname = ?, lastname = ?
+      `UPDATE utilisateurs
+       SET role = 'ADMIN', mot_de_passe = ?, prenom = ?, nom = ?
        WHERE id = ?`,
       [passwordHash, firstname.trim(), lastname.trim(), existing.id],
     );
 
     console.log(
-      existing.role === "admin"
+      existing.role === "ADMIN"
         ? `Compte administrateur mis à jour : ${normalizedEmail}`
         : `Compte existant promu administrateur : ${normalizedEmail}`,
     );
@@ -60,8 +60,8 @@ const run = async () => {
   }
 
   await pool.query(
-    `INSERT INTO users (firstname, lastname, email, password_hash, role)
-     VALUES (?, ?, ?, ?, 'admin')`,
+    `INSERT INTO utilisateurs (prenom, nom, email, mot_de_passe, role)
+     VALUES (?, ?, ?, ?, 'ADMIN')`,
     [firstname.trim(), lastname.trim(), normalizedEmail, passwordHash],
   );
 

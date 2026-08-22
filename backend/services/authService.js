@@ -24,7 +24,7 @@ const makeError = (message, statusCode) => {
   return error;
 };
 
-const register = async ({ firstname, lastname, email, role, password, ipAddress }) => {
+const register = async ({ firstname, lastname, email, role, password, ipAddress, userAgent }) => {
   if (!PUBLIC_ROLES.includes(role)) {
     throw makeError("Le type de compte sélectionné est invalide.", 400);
   }
@@ -52,6 +52,7 @@ const register = async ({ firstname, lastname, email, role, password, ipAddress 
     eventType: "REGISTER",
     message: `Création de compte (${role}).`,
     ipAddress,
+    userAgent,
   });
 
   return { user, token };
@@ -60,7 +61,7 @@ const register = async ({ firstname, lastname, email, role, password, ipAddress 
 // Message volontairement identique que l'e-mail existe ou non, ou que le
 // mot de passe soit erroné : sinon la réponse permettrait de deviner
 // quels comptes existent.
-const login = async ({ email, password, ipAddress }) => {
+const login = async ({ email, password, ipAddress, userAgent }) => {
   const invalidCredentials = () =>
     makeError("Adresse e-mail ou mot de passe incorrect.", 401);
 
@@ -72,6 +73,7 @@ const login = async ({ email, password, ipAddress }) => {
       eventType: "LOGIN_FAILED",
       message: "Tentative de connexion avec une adresse e-mail inconnue.",
       ipAddress,
+      userAgent,
     });
 
     throw invalidCredentials();
@@ -85,6 +87,7 @@ const login = async ({ email, password, ipAddress }) => {
       eventType: "LOGIN_FAILED",
       message: "Mot de passe incorrect.",
       ipAddress,
+      userAgent,
     });
 
     throw invalidCredentials();
@@ -96,6 +99,7 @@ const login = async ({ email, password, ipAddress }) => {
       eventType: "LOGIN_FAILED",
       message: "Tentative de connexion sur un compte désactivé.",
       ipAddress,
+      userAgent,
     });
 
     throw makeError(
@@ -111,6 +115,7 @@ const login = async ({ email, password, ipAddress }) => {
     eventType: "LOGIN_SUCCESS",
     message: "Connexion réussie.",
     ipAddress,
+    userAgent,
   });
 
   return {
@@ -125,7 +130,7 @@ const login = async ({ email, password, ipAddress }) => {
   };
 };
 
-const changePassword = async ({ userId, currentPassword, newPassword, ipAddress }) => {
+const changePassword = async ({ userId, currentPassword, newPassword, ipAddress, userAgent }) => {
   const record = await userModel.findPasswordHashById(userId);
 
   const currentMatches = await comparePassword(
@@ -145,6 +150,7 @@ const changePassword = async ({ userId, currentPassword, newPassword, ipAddress 
     eventType: "PASSWORD_CHANGED",
     message: "Mot de passe modifié par l'utilisateur.",
     ipAddress,
+    userAgent,
   });
 };
 
@@ -153,7 +159,7 @@ const changePassword = async ({ userId, currentPassword, newPassword, ipAddress 
 // sont inscrits. L'échec d'envoi du mail (SMTP en panne, par exemple)
 // n'est jamais remonté au client pour la même raison ; il est seulement
 // tracé côté serveur.
-const requestPasswordReset = async ({ email, ipAddress }) => {
+const requestPasswordReset = async ({ email, ipAddress, userAgent }) => {
   const user = await userModel.findByEmail(email.trim().toLowerCase());
 
   if (!user) {
@@ -162,6 +168,7 @@ const requestPasswordReset = async ({ email, ipAddress }) => {
       eventType: "PASSWORD_RESET_REQUESTED",
       message: "Demande de réinitialisation sur une adresse e-mail inconnue.",
       ipAddress,
+      userAgent,
     });
 
     return;
@@ -190,10 +197,11 @@ const requestPasswordReset = async ({ email, ipAddress }) => {
     eventType: "PASSWORD_RESET_REQUESTED",
     message: "Demande de réinitialisation de mot de passe.",
     ipAddress,
+    userAgent,
   });
 };
 
-const resetPassword = async ({ token, newPassword, ipAddress }) => {
+const resetPassword = async ({ token, newPassword, ipAddress, userAgent }) => {
   const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
   const record = await passwordResetModel.findValidByTokenHash(tokenHash);
 
@@ -213,6 +221,7 @@ const resetPassword = async ({ token, newPassword, ipAddress }) => {
     eventType: "PASSWORD_RESET",
     message: "Mot de passe réinitialisé via le lien reçu par e-mail.",
     ipAddress,
+    userAgent,
   });
 };
 

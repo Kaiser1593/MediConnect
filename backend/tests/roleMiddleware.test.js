@@ -34,6 +34,7 @@ describe("authorize", () => {
       user: { id: 1, role: "patient" },
       originalUrl: "/api/admin/stats",
       ip: "127.0.0.1",
+      headers: {},
     };
     const res = buildRes();
     const next = jest.fn();

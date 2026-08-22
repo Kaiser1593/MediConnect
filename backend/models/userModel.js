@@ -1,46 +1,80 @@
 // backend/models/userModel.js
-// Toutes les requêtes SQL touchant à la table users.
+// Toutes les requêtes SQL touchant à la table utilisateurs.
 // Aucune logique métier ici : uniquement l'accès aux données.
+//
+// La table est nommée en français (utilisateurs, prenom, nom,
+// mot_de_passe, role ENUM('PATIENT','MEDECIN','ADMIN'), statut_compte),
+// conformément à l'Annexe B du dossier de projet. Ce modèle traduit à la
+// frontière : le reste du code applicatif continue de manipuler
+// firstname/lastname/password_hash/role ('patient'/'doctor'/'admin')/
+// is_active, exactement comme avant ce renommage.
 
 const { pool } = require("../config/database");
+const { ROLE_TO_DB, ROLE_FROM_DB, accountStatusFromDb } = require("../utils/enumMapping");
 
 // Recherche un utilisateur par e-mail.
 // Renvoie le hash du mot de passe : réservé à la connexion.
 const findByEmail = async (email) => {
   const [rows] = await pool.query(
-    `SELECT id, firstname, lastname, email, password_hash, role, is_active
-     FROM users
+    `SELECT id, prenom AS firstname, nom AS lastname, email,
+            mot_de_passe AS password_hash, role, statut_compte
+     FROM utilisateurs
      WHERE email = ?
      LIMIT 1`,
     [email],
   );
 
-  return rows[0] || null;
+  const row = rows[0];
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    firstname: row.firstname,
+    lastname: row.lastname,
+    email: row.email,
+    password_hash: row.password_hash,
+    role: ROLE_FROM_DB[row.role],
+    is_active: accountStatusFromDb(row.statut_compte),
+  };
 };
 
 // Recherche par identifiant, SANS le hash du mot de passe.
 // C'est cette version qu'on utilise partout ailleurs.
-// La jointure avec doctors expose is_approved : le front s'en sert
-// pour avertir un médecin dont le compte n'est pas encore validé.
-// NULL pour les patients et les administrateurs, qui n'ont pas de fiche doctors.
+// La jointure avec medecins expose est_valide (is_approved) : le front
+// s'en sert pour avertir un médecin dont le compte n'est pas encore validé.
+// NULL pour les patients et les administrateurs, qui n'ont pas de fiche medecins.
 const findById = async (id) => {
   const [rows] = await pool.query(
-    `SELECT u.id, u.firstname, u.lastname, u.email, u.role, u.phone,
-            u.is_active, u.created_at, d.is_approved
-     FROM users u
-     LEFT JOIN doctors d ON d.user_id = u.id
+    `SELECT u.id, u.prenom AS firstname, u.nom AS lastname, u.email, u.role,
+            u.telephone AS phone, u.statut_compte, u.date_creation AS created_at,
+            m.est_valide AS is_approved
+     FROM utilisateurs u
+     LEFT JOIN medecins m ON m.utilisateur_id = u.id
      WHERE u.id = ?
      LIMIT 1`,
     [id],
   );
 
-  return rows[0] || null;
+  const row = rows[0];
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    firstname: row.firstname,
+    lastname: row.lastname,
+    email: row.email,
+    role: ROLE_FROM_DB[row.role],
+    phone: row.phone,
+    is_active: accountStatusFromDb(row.statut_compte),
+    created_at: row.created_at,
+    is_approved: row.is_approved,
+  };
 };
 
 // Utilisé pour vérifier le mot de passe actuel avant de le changer.
 const findPasswordHashById = async (id) => {
   const [rows] = await pool.query(
-    "SELECT password_hash FROM users WHERE id = ? LIMIT 1",
+    "SELECT mot_de_passe AS password_hash FROM utilisateurs WHERE id = ? LIMIT 1",
     [id],
   );
 
@@ -48,7 +82,7 @@ const findPasswordHashById = async (id) => {
 };
 
 const updatePassword = async (id, passwordHash) => {
-  await pool.query("UPDATE users SET password_hash = ? WHERE id = ?", [
+  await pool.query("UPDATE utilisateurs SET mot_de_passe = ? WHERE id = ?", [
     passwordHash,
     id,
   ]);
@@ -56,7 +90,7 @@ const updatePassword = async (id, passwordHash) => {
 
 const emailExists = async (email) => {
   const [rows] = await pool.query(
-    "SELECT id FROM users WHERE email = ? LIMIT 1",
+    "SELECT id FROM utilisateurs WHERE email = ? LIMIT 1",
     [email],
   );
 
@@ -79,20 +113,20 @@ const createWithProfile = async ({
     await connection.beginTransaction();
 
     const [result] = await connection.query(
-      `INSERT INTO users (firstname, lastname, email, password_hash, role)
+      `INSERT INTO utilisateurs (prenom, nom, email, mot_de_passe, role)
        VALUES (?, ?, ?, ?, ?)`,
-      [firstname, lastname, email, passwordHash, role],
+      [firstname, lastname, email, passwordHash, ROLE_TO_DB[role]],
     );
 
     const userId = result.insertId;
 
     if (role === "patient") {
-      await connection.query("INSERT INTO patients (user_id) VALUES (?)", [
+      await connection.query("INSERT INTO patients (utilisateur_id) VALUES (?)", [
         userId,
       ]);
     } else if (role === "doctor") {
-      // is_approved reste FALSE : un administrateur doit valider le compte.
-      await connection.query("INSERT INTO doctors (user_id) VALUES (?)", [
+      // est_valide reste FALSE : un administrateur doit valider le compte.
+      await connection.query("INSERT INTO medecins (utilisateur_id) VALUES (?)", [
         userId,
       ]);
     }

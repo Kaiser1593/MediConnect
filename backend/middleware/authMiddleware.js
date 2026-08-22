@@ -13,6 +13,7 @@ const protect = (req, res, next) => {
       eventType: "ACCESS_DENIED",
       message: `Accès refusé (en-tête Authorization absent) sur ${req.originalUrl}.`,
       ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
     });
 
     return res.status(401).json({
@@ -36,6 +37,7 @@ const protect = (req, res, next) => {
       eventType: "ACCESS_DENIED",
       message: `Accès refusé (token invalide ou expiré) sur ${req.originalUrl}.`,
       ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
     });
 
     return res.status(401).json({

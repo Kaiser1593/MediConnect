@@ -3,11 +3,11 @@
 
 const { pool } = require("../config/database");
 
-const create = async ({ userId, type, title, message }) => {
+const create = async ({ userId, appointmentId, type, title, message }) => {
   const [result] = await pool.query(
-    `INSERT INTO notifications (user_id, type, title, message)
-     VALUES (?, ?, ?, ?)`,
-    [userId, type, title, message],
+    `INSERT INTO notifications (utilisateur_id, rendez_vous_id, type, titre, message)
+     VALUES (?, ?, ?, ?, ?)`,
+    [userId, appointmentId || null, type, title, message],
   );
 
   return result.insertId;
@@ -15,21 +15,21 @@ const create = async ({ userId, type, title, message }) => {
 
 const getByUserId = async (userId) => {
   const [rows] = await pool.query(
-    `SELECT id, type, title, message, is_read, created_at
+    `SELECT id, type, titre AS title, message, lue AS is_read, date_envoi AS created_at
      FROM notifications
-     WHERE user_id = ?
-     ORDER BY created_at DESC`,
+     WHERE utilisateur_id = ?
+     ORDER BY date_envoi DESC`,
     [userId],
   );
 
   return rows;
 };
 
-// La condition sur user_id garantit qu'un utilisateur ne peut marquer
-// comme lue qu'une notification qui lui appartient.
+// La condition sur utilisateur_id garantit qu'un utilisateur ne peut
+// marquer comme lue qu'une notification qui lui appartient.
 const markAsRead = async (id, userId) => {
   const [result] = await pool.query(
-    "UPDATE notifications SET is_read = TRUE WHERE id = ? AND user_id = ?",
+    "UPDATE notifications SET lue = TRUE WHERE id = ? AND utilisateur_id = ?",
     [id, userId],
   );
 

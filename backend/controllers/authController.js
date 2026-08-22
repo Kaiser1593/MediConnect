@@ -45,6 +45,7 @@ const registerUser = async (req, res, next) => {
       role,
       password,
       ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
     });
 
     return res.status(201).json({
@@ -73,6 +74,7 @@ const loginUser = async (req, res, next) => {
       email,
       password,
       ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
     });
 
     return res.status(200).json({
@@ -137,6 +139,7 @@ const changePassword = async (req, res, next) => {
       currentPassword,
       newPassword,
       ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
     });
 
     return res.status(200).json({
@@ -162,7 +165,11 @@ const forgotPassword = async (req, res, next) => {
       });
     }
 
-    await authService.requestPasswordReset({ email, ipAddress: req.ip });
+    await authService.requestPasswordReset({
+      email,
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
 
     return res.status(200).json({
       success: true,
@@ -203,6 +210,7 @@ const resetPassword = async (req, res, next) => {
       token,
       newPassword,
       ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
     });
 
     return res.status(200).json({

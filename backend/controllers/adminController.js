@@ -133,6 +133,7 @@ const approveDoctor = async (req, res, next) => {
       eventType: "DOCTOR_APPROVED",
       message: `Médecin #${req.params.id} validé par l'administrateur.`,
       ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
     });
 
     return res.status(200).json({
@@ -177,6 +178,7 @@ const updateUserStatus = async (req, res, next) => {
       eventType: "USER_STATUS_CHANGED",
       message: `Compte #${targetId} ${is_active ? "activé" : "désactivé"} par l'administrateur.`,
       ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
     });
 
     return res.status(200).json({

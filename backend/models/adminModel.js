@@ -1,24 +1,39 @@
 // backend/models/adminModel.js
 // Toutes les requêtes SQL réservées à l'espace administrateur.
 // Aucune logique métier ici : uniquement l'accès aux données.
+//
+// Les tables sont nommées en français (utilisateurs, medecins,
+// rendez_vous, journaux_securite...), conformément à l'Annexe B du
+// dossier de projet. Ce modèle traduit à la frontière : le reste du
+// code applicatif (adminController, AdminDashboard.jsx, AdminLogs.jsx...)
+// continue de manipuler les mêmes noms et valeurs qu'avant ce renommage.
 
 const { pool } = require("../config/database");
+const {
+  ROLE_FROM_DB,
+  STATUS_TO_DB,
+  STATUS_FROM_DB,
+  accountStatusToDb,
+  accountStatusFromDb,
+  EVENT_TYPE_TO_DB,
+  EVENT_TYPE_FROM_DB,
+} = require("../utils/enumMapping");
 
 const getStats = async () => {
   const [[userRow]] = await pool.query(
-    "SELECT COUNT(*) AS total FROM users",
+    "SELECT COUNT(*) AS total FROM utilisateurs",
   );
 
   const [[approvedDoctorRow]] = await pool.query(
-    "SELECT COUNT(*) AS total FROM doctors WHERE is_approved = TRUE",
+    "SELECT COUNT(*) AS total FROM medecins WHERE est_valide = TRUE",
   );
 
   const [[pendingDoctorRow]] = await pool.query(
-    "SELECT COUNT(*) AS total FROM doctors WHERE is_approved = FALSE",
+    "SELECT COUNT(*) AS total FROM medecins WHERE est_valide = FALSE",
   );
 
   const [[appointmentRow]] = await pool.query(
-    "SELECT COUNT(*) AS total FROM appointments",
+    "SELECT COUNT(*) AS total FROM rendez_vous",
   );
 
   return {
@@ -31,26 +46,37 @@ const getStats = async () => {
 
 const getUsers = async ({ limit, offset }) => {
   const [rows] = await pool.query(
-    `SELECT id, firstname, lastname, email, role, is_active, created_at
-     FROM users
-     ORDER BY created_at DESC
+    `SELECT id, prenom AS firstname, nom AS lastname, email, role,
+            statut_compte, date_creation AS created_at
+     FROM utilisateurs
+     ORDER BY date_creation DESC
      LIMIT ? OFFSET ?`,
     [limit, offset],
   );
 
-  const [[{ total }]] = await pool.query("SELECT COUNT(*) AS total FROM users");
+  const [[{ total }]] = await pool.query(
+    "SELECT COUNT(*) AS total FROM utilisateurs",
+  );
 
-  return { rows, total };
+  return {
+    rows: rows.map(({ statut_compte: statutCompte, ...rest }) => ({
+      ...rest,
+      role: ROLE_FROM_DB[rest.role],
+      is_active: accountStatusFromDb(statutCompte),
+    })),
+    total,
+  };
 };
 
 const getPendingDoctors = async () => {
   const [rows] = await pool.query(
-    `SELECT d.id, d.license_number, d.city, d.created_at,
-            u.id AS user_id, u.firstname, u.lastname, u.email
-     FROM doctors d
-     JOIN users u ON u.id = d.user_id
-     WHERE d.is_approved = FALSE
-     ORDER BY d.created_at DESC`,
+    `SELECT m.id, m.numero_rpps AS license_number, m.ville AS city,
+            m.date_creation AS created_at,
+            u.id AS user_id, u.prenom AS firstname, u.nom AS lastname, u.email
+     FROM medecins m
+     JOIN utilisateurs u ON u.id = m.utilisateur_id
+     WHERE m.est_valide = FALSE
+     ORDER BY m.date_creation DESC`,
   );
 
   return rows;
@@ -59,19 +85,20 @@ const getPendingDoctors = async () => {
 // Tous les médecins (validés et en attente), pour la page "Médecins".
 const getAllDoctors = async ({ limit, offset }) => {
   const [rows] = await pool.query(
-    `SELECT d.id, d.license_number, d.city, d.is_approved, d.created_at,
-            u.id AS user_id, u.firstname, u.lastname, u.email,
-            s.name AS specialty
-     FROM doctors d
-     JOIN users u ON u.id = d.user_id
-     LEFT JOIN specialties s ON s.id = d.specialty_id
-     ORDER BY d.created_at DESC
+    `SELECT m.id, m.numero_rpps AS license_number, m.ville AS city,
+            m.est_valide AS is_approved, m.date_creation AS created_at,
+            u.id AS user_id, u.prenom AS firstname, u.nom AS lastname, u.email,
+            s.nom AS specialty
+     FROM medecins m
+     JOIN utilisateurs u ON u.id = m.utilisateur_id
+     LEFT JOIN specialites s ON s.id = m.specialite_id
+     ORDER BY m.date_creation DESC
      LIMIT ? OFFSET ?`,
     [limit, offset],
   );
 
   const [[{ total }]] = await pool.query(
-    "SELECT COUNT(*) AS total FROM doctors",
+    "SELECT COUNT(*) AS total FROM medecins",
   );
 
   return { rows, total };
@@ -79,55 +106,58 @@ const getAllDoctors = async ({ limit, offset }) => {
 
 // Tous les rendez-vous de la plateforme, avec patient et médecin joints.
 const getAllAppointments = async ({ limit, offset, status }) => {
-  const whereClause = status ? "WHERE a.status = ?" : "";
-  const params = status ? [status] : [];
+  const whereClause = status ? "WHERE a.statut = ?" : "";
+  const params = status ? [STATUS_TO_DB[status]] : [];
 
   const [rows] = await pool.query(
-    `SELECT a.id, a.scheduled_on, a.start_time, a.status,
-            pu.firstname AS patient_firstname, pu.lastname AS patient_lastname,
-            du.firstname AS doctor_firstname, du.lastname AS doctor_lastname
-     FROM appointments a
+    `SELECT a.id, a.date_rdv AS scheduled_on, a.heure_debut AS start_time, a.statut,
+            pu.prenom AS patient_firstname, pu.nom AS patient_lastname,
+            du.prenom AS doctor_firstname, du.nom AS doctor_lastname
+     FROM rendez_vous a
      JOIN patients p ON p.id = a.patient_id
-     JOIN users pu   ON pu.id = p.user_id
-     JOIN doctors d  ON d.id = a.doctor_id
-     JOIN users du   ON du.id = d.user_id
+     JOIN utilisateurs pu ON pu.id = p.utilisateur_id
+     JOIN medecins m  ON m.id = a.medecin_id
+     JOIN utilisateurs du ON du.id = m.utilisateur_id
      ${whereClause}
-     ORDER BY a.scheduled_on DESC, a.start_time DESC
+     ORDER BY a.date_rdv DESC, a.heure_debut DESC
      LIMIT ? OFFSET ?`,
     [...params, limit, offset],
   );
 
   const [[{ total }]] = await pool.query(
-    `SELECT COUNT(*) AS total FROM appointments a ${whereClause}`,
+    `SELECT COUNT(*) AS total FROM rendez_vous a ${whereClause}`,
     params,
   );
 
-  return { rows, total };
+  return {
+    rows: rows.map(({ statut, ...rest }) => ({ ...rest, status: STATUS_FROM_DB[statut] })),
+    total,
+  };
 };
 
 // Répartitions utilisées par la page "Statistiques".
 const getUsersByRole = async () => {
   const [rows] = await pool.query(
-    "SELECT role, COUNT(*) AS total FROM users GROUP BY role",
+    "SELECT role, COUNT(*) AS total FROM utilisateurs GROUP BY role",
   );
 
-  return rows;
+  return rows.map((row) => ({ role: ROLE_FROM_DB[row.role], total: row.total }));
 };
 
 const getAppointmentsByStatus = async () => {
   const [rows] = await pool.query(
-    "SELECT status, COUNT(*) AS total FROM appointments GROUP BY status",
+    "SELECT statut, COUNT(*) AS total FROM rendez_vous GROUP BY statut",
   );
 
-  return rows;
+  return rows.map((row) => ({ status: STATUS_FROM_DB[row.statut], total: row.total }));
 };
 
 const getDoctorsBySpecialty = async () => {
   const [rows] = await pool.query(
-    `SELECT COALESCE(s.name, 'Non renseignée') AS specialty, COUNT(*) AS total
-     FROM doctors d
-     LEFT JOIN specialties s ON s.id = d.specialty_id
-     GROUP BY s.name
+    `SELECT COALESCE(s.nom, 'Non renseignée') AS specialty, COUNT(*) AS total
+     FROM medecins m
+     LEFT JOIN specialites s ON s.id = m.specialite_id
+     GROUP BY s.nom
      ORDER BY total DESC`,
   );
 
@@ -136,7 +166,7 @@ const getDoctorsBySpecialty = async () => {
 
 const approveDoctor = async (doctorId) => {
   const [result] = await pool.query(
-    "UPDATE doctors SET is_approved = TRUE WHERE id = ?",
+    "UPDATE medecins SET est_valide = TRUE WHERE id = ?",
     [doctorId],
   );
 
@@ -145,8 +175,8 @@ const approveDoctor = async (doctorId) => {
 
 const setUserActiveStatus = async (userId, isActive) => {
   const [result] = await pool.query(
-    "UPDATE users SET is_active = ? WHERE id = ?",
-    [isActive, userId],
+    "UPDATE utilisateurs SET statut_compte = ? WHERE id = ?",
+    [accountStatusToDb(isActive), userId],
   );
 
   return result.affectedRows > 0;
@@ -155,26 +185,36 @@ const setUserActiveStatus = async (userId, isActive) => {
 // Journaux de sécurité, les plus récents d'abord, avec filtre optionnel
 // par type d'événement, pour la page "Journaux" de l'espace administrateur.
 const getSecurityLogs = async ({ limit, offset, eventType }) => {
-  const whereClause = eventType ? "WHERE l.event_type = ?" : "";
-  const params = eventType ? [eventType] : [];
+  const whereClause = eventType ? "WHERE l.type_evenement = ?" : "";
+  const params = eventType ? [EVENT_TYPE_TO_DB[eventType] || eventType] : [];
 
   const [rows] = await pool.query(
-    `SELECT l.id, l.event_type, l.message, l.ip_address, l.created_at,
-            u.id AS user_id, u.firstname, u.lastname
-     FROM security_logs l
-     LEFT JOIN users u ON u.id = l.user_id
+    `SELECT l.id, l.type_evenement, l.description, l.adresse_ip, l.user_agent,
+            l.date_evenement,
+            u.id AS user_id, u.prenom AS firstname, u.nom AS lastname
+     FROM journaux_securite l
+     LEFT JOIN utilisateurs u ON u.id = l.utilisateur_id
      ${whereClause}
-     ORDER BY l.created_at DESC
+     ORDER BY l.date_evenement DESC
      LIMIT ? OFFSET ?`,
     [...params, limit, offset],
   );
 
   const [[{ total }]] = await pool.query(
-    `SELECT COUNT(*) AS total FROM security_logs l ${whereClause}`,
+    `SELECT COUNT(*) AS total FROM journaux_securite l ${whereClause}`,
     params,
   );
 
-  return { rows, total };
+  return {
+    rows: rows.map(({ type_evenement: typeEvenement, description, adresse_ip: ipAddress, date_evenement: createdAt, ...rest }) => ({
+      ...rest,
+      event_type: EVENT_TYPE_FROM_DB[typeEvenement] || typeEvenement,
+      message: description,
+      ip_address: ipAddress,
+      created_at: createdAt,
+    })),
+    total,
+  };
 };
 
 module.exports = {

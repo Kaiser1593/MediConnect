@@ -10,9 +10,9 @@ const notificationModel = require("../models/notificationModel");
 const formatWhen = (scheduledOn, startTime) =>
   `${scheduledOn} à ${startTime.slice(0, 5)}`;
 
-const notify = async ({ userId, type, title, message }) => {
+const notify = async ({ userId, appointmentId, type, title, message }) => {
   try {
-    await notificationModel.create({ userId, type, title, message });
+    await notificationModel.create({ userId, appointmentId, type, title, message });
   } catch (error) {
     console.error("Échec de la création d'une notification :", error.message);
   }
@@ -23,6 +23,7 @@ const notify = async ({ userId, type, title, message }) => {
 const notifyAppointmentCreated = async ({
   patientUserId,
   doctorUserId,
+  appointmentId,
   doctorName,
   scheduledOn,
   startTime,
@@ -32,12 +33,14 @@ const notifyAppointmentCreated = async ({
   await Promise.all([
     notify({
       userId: patientUserId,
+      appointmentId,
       type: "appointment_created",
       title: "Rendez-vous enregistré",
       message: `Votre rendez-vous avec ${doctorName} le ${when} a bien été enregistré.`,
     }),
     notify({
       userId: doctorUserId,
+      appointmentId,
       type: "appointment_created",
       title: "Nouvelle demande de rendez-vous",
       message: `Un nouveau rendez-vous a été réservé le ${when}.`,
@@ -49,6 +52,7 @@ const notifyAppointmentCreated = async ({
 // à l'origine de l'action.
 const notifyAppointmentConfirmed = async ({
   patientUserId,
+  appointmentId,
   scheduledOn,
   startTime,
 }) => {
@@ -56,6 +60,7 @@ const notifyAppointmentConfirmed = async ({
 
   await notify({
     userId: patientUserId,
+    appointmentId,
     type: "appointment_confirmed",
     title: "Rendez-vous confirmé",
     message: `Votre rendez-vous du ${when} a été confirmé par le médecin.`,
@@ -66,6 +71,7 @@ const notifyAppointmentConfirmed = async ({
 // de l'annulation.
 const notifyAppointmentCancelled = async ({
   recipientUserId,
+  appointmentId,
   scheduledOn,
   startTime,
 }) => {
@@ -73,6 +79,7 @@ const notifyAppointmentCancelled = async ({
 
   await notify({
     userId: recipientUserId,
+    appointmentId,
     type: "appointment_cancelled",
     title: "Rendez-vous annulé",
     message: `Le rendez-vous du ${when} a été annulé.`,
@@ -86,6 +93,7 @@ const notifyAppointmentCancelled = async ({
 const notifyAppointmentRescheduled = async ({
   patientUserId,
   doctorUserId,
+  appointmentId,
   doctorName,
   oldScheduledOn,
   oldStartTime,
@@ -98,12 +106,14 @@ const notifyAppointmentRescheduled = async ({
   await Promise.all([
     notify({
       userId: patientUserId,
+      appointmentId,
       type: "appointment_rescheduled",
       title: "Rendez-vous replanifié",
       message: `Votre rendez-vous avec ${doctorName} du ${oldWhen} a été déplacé au ${newWhen}.`,
     }),
     notify({
       userId: doctorUserId,
+      appointmentId,
       type: "appointment_rescheduled",
       title: "Rendez-vous replanifié",
       message: `Un rendez-vous du ${oldWhen} a été déplacé au ${newWhen} par le patient.`,

@@ -12,6 +12,7 @@ const authorize = (...roles) => {
         eventType: "ACCESS_DENIED",
         message: `Rôle "${req.user.role}" refusé sur ${req.originalUrl} (rôles autorisés : ${roles.join(", ")}).`,
         ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
       });
 
       return res.status(403).json({
