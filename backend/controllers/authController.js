@@ -222,6 +222,23 @@ const resetPassword = async (req, res, next) => {
   }
 };
 
+// Révoque le token présenté : ajouté à la liste noire Redis jusqu'à sa
+// date d'expiration naturelle (voir authService.logout / cacheService).
+const logoutUser = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+
+    await authService.logout({ token });
+
+    return res.status(200).json({
+      success: true,
+      message: "Déconnexion réussie.",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -229,4 +246,5 @@ module.exports = {
   changePassword,
   forgotPassword,
   resetPassword,
+  logoutUser,
 };

@@ -3,6 +3,7 @@
 // validation du format des champs et la construction de la réponse HTTP.
 
 const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
 
 const userModel = require("../models/userModel");
 const passwordResetModel = require("../models/passwordResetModel");
@@ -10,6 +11,7 @@ const { generateToken } = require("../utils/generateToken");
 const { logSecurityEvent } = require("../utils/logger");
 const { hashPassword, comparePassword } = require("../utils/hashPassword");
 const emailService = require("./emailService");
+const cacheService = require("./cacheService");
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 heure
 
@@ -225,10 +227,22 @@ const resetPassword = async ({ token, newPassword, ipAddress, userAgent }) => {
   });
 };
 
+// Le token a déjà été vérifié par le middleware "protect" avant d'arriver
+// ici : on se contente de lire sa date d'expiration (jwt.decode, sans
+// re-vérifier la signature) pour ne le garder en liste noire que le temps
+// qu'il lui restait à vivre, jamais plus.
+const logout = async ({ token }) => {
+  const decoded = jwt.decode(token);
+  const ttlSeconds = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 0;
+
+  await cacheService.blacklistToken(token, ttlSeconds);
+};
+
 module.exports = {
   register,
   login,
   changePassword,
   requestPasswordReset,
   resetPassword,
+  logout,
 };

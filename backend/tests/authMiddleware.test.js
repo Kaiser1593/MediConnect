@@ -46,7 +46,7 @@ describe("protect", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("pose req.user et appelle next() si le token est valide", () => {
+  it("pose req.user et appelle next() si le token est valide", async () => {
     const token = jwt.sign({ id: 7, role: "doctor" }, process.env.JWT_SECRET);
     const req = {
       headers: { authorization: `Bearer ${token}` },
@@ -56,7 +56,10 @@ describe("protect", () => {
     const res = buildRes();
     const next = jest.fn();
 
-    protect(req, res, next);
+    // Aucun Redis démarré en test : isTokenBlacklisted renvoie false
+    // (mode dégradé), le token reste donc valide, comme en production
+    // quand Redis est indisponible.
+    await protect(req, res, next);
 
     expect(req.user).toEqual({ id: 7, role: "doctor" });
     expect(next).toHaveBeenCalled();

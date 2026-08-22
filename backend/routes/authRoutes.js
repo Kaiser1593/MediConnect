@@ -1,6 +1,7 @@
 // backend/routes/authRoutes.js
 
 const express = require("express");
+const rateLimit = require("express-rate-limit");
 
 const {
   registerUser,
@@ -9,6 +10,7 @@ const {
   changePassword,
   forgotPassword,
   resetPassword,
+  logoutUser,
 } = require("../controllers/authController");
 
 const { protect } = require("../middleware/authMiddleware");
@@ -63,8 +65,24 @@ const loginSchema = {
   },
 };
 
+// Contre le brute force : 10 tentatives par IP toutes les 15 minutes.
+// Ne compte que les tentatives échouées, pour ne jamais bloquer un
+// utilisateur légitime qui enchaîne des connexions réussies (plusieurs
+// appareils, par exemple).
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  message: {
+    success: false,
+    message: "Trop de tentatives de connexion. Réessayez dans quelques minutes.",
+  },
+});
+
 router.post("/register", validateBody(registerSchema), registerUser);
-router.post("/login", validateBody(loginSchema), loginUser);
+router.post("/login", loginLimiter, validateBody(loginSchema), loginUser);
 
 // Volontairement sans validation de format, comme /login : la réponse est
 // identique quelle que soit l'adresse saisie (voir authService).
@@ -74,5 +92,6 @@ router.post("/reset-password", resetPassword);
 // Route protégée : nécessite un token valide.
 router.get("/me", protect, getCurrentUser);
 router.patch("/password", protect, changePassword);
+router.post("/logout", protect, logoutUser);
 
 module.exports = router;

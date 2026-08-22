@@ -7,6 +7,7 @@ const doctorModel = require("../models/doctorModel");
 const patientModel = require("../models/patientModel");
 const appointmentModel = require("../models/appointmentModel");
 const notificationService = require("./notificationService");
+const cacheService = require("./cacheService");
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -141,6 +142,8 @@ const bookAppointment = async ({
       reason,
     });
 
+    await cacheService.invalidateAvailability(doctorId, scheduledOn);
+
     notificationService.notifyAppointmentCreated({
       patientUserId,
       doctorUserId,
@@ -170,6 +173,8 @@ const bookAppointment = async ({
     endTime,
     reason,
   });
+
+  await cacheService.invalidateAvailability(doctorId, scheduledOn);
 
   notificationService.notifyAppointmentCreated({
     patientUserId,
@@ -273,6 +278,11 @@ const cancelAppointment = async (user, appointmentId) => {
 
   await appointmentModel.cancel(appointmentId);
 
+  await cacheService.invalidateAvailability(
+    appointment.doctor_id,
+    appointment.scheduled_on.toISOString().slice(0, 10),
+  );
+
   // On informe la partie qui n'est pas à l'origine de l'annulation.
   const recipientUserId =
     user.role === "doctor"
@@ -331,6 +341,11 @@ const rescheduleAppointment = async (user, appointmentId, { scheduledOn, startTi
 
   await appointmentModel.cancel(appointmentId);
 
+  await cacheService.invalidateAvailability(
+    doctorId,
+    appointment.scheduled_on.toISOString().slice(0, 10),
+  );
+
   const existing = await appointmentModel.findByDoctorSlot(
     doctorId,
     scheduledOn,
@@ -364,6 +379,8 @@ const rescheduleAppointment = async (user, appointmentId, { scheduledOn, startTi
         endTime,
         reason,
       });
+
+  await cacheService.invalidateAvailability(doctorId, scheduledOn);
 
   const doctorUserId = await doctorModel.getUserIdById(doctorId);
 

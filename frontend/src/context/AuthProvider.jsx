@@ -54,6 +54,22 @@ function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(() => {
+    // Le token est lu puis passé explicitement en en-tête : l'intercepteur
+    // de requête (voir services/api.js) le relit depuis localStorage de
+    // façon asynchrone, après le retrait ci-dessous, et enverrait sinon
+    // la requête sans authentification.
+    // "Best effort" : la déconnexion côté client doit réussir même si
+    // l'appel réseau échoue. Révoque le token côté serveur (liste noire
+    // Redis, voir backend/services/cacheService.js) pour qu'il ne puisse
+    // plus être réutilisé s'il a fuité.
+    const token = localStorage.getItem(TOKEN_KEY);
+
+    if (token) {
+      api
+        .post("/auth/logout", null, { headers: { Authorization: `Bearer ${token}` } })
+        .catch(() => {});
+    }
+
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     setUser(null);

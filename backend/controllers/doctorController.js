@@ -2,6 +2,7 @@
 
 const doctorModel = require("../models/doctorModel");
 const appointmentService = require("../services/appointmentService");
+const cacheService = require("../services/cacheService");
 
 const searchDoctors = async (req, res, next) => {
   try {
@@ -71,7 +72,17 @@ const getDoctorAvailability = async (req, res, next) => {
       });
     }
 
-    const slots = await appointmentService.computeAvailableSlots(doctor, date);
+    // Lecture publique uniquement : la validation d'une réservation
+    // recalcule toujours les créneaux depuis MySQL (voir appointmentService),
+    // jamais depuis ce cache, pour ne jamais affaiblir la protection contre
+    // le double-booking.
+    const cached = await cacheService.getCachedAvailability(req.params.id, date);
+    const slots =
+      cached || (await appointmentService.computeAvailableSlots(doctor, date));
+
+    if (!cached) {
+      await cacheService.setCachedAvailability(req.params.id, date, slots);
+    }
 
     return res.status(200).json({ success: true, date, slots });
   } catch (error) {
