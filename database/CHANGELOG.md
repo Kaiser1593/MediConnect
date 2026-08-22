@@ -86,6 +86,11 @@ base, traduction dans les modèles.
   jusqu'ici, ajoutée pour relier une notification à son rendez-vous
   d'origine (`ON DELETE SET NULL` : la suppression d'un rendez-vous ne
   supprime jamais l'historique de notifications).
+- **`utilisateurs.consentement_rgpd_le`** — colonne nullable ajoutée en
+  Phase 7, horodatage du consentement RGPD donné à l'inscription (case à
+  cocher du formulaire, désormais réellement câblée et vérifiée côté
+  serveur). Voir `docs/RGPD.md` pour l'implémentation complète (export des
+  données, suppression avec anonymisation).
 
 ## 5. Fichier volontairement non recréé
 

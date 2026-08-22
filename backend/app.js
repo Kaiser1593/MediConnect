@@ -1,6 +1,7 @@
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
+const compression = require("compression");
 
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
@@ -20,7 +21,13 @@ app.use(helmet());
 // d'ajouter d'autres origines (ex. un nom de domaine) sans toucher au code.
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  // 5174 : Vite passe automatiquement à ce port si un autre serveur de
+  // dev occupe déjà le 5173 (deux instances lancées en parallèle).
+  "http://localhost:5174",
+  "http://127.0.0.1:5174",
   "http://localhost:8080",
+  "http://127.0.0.1:8080",
   ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : []),
 ];
 
@@ -29,6 +36,11 @@ app.use(
     origin: allowedOrigins,
   }),
 );
+
+// Compresse les réponses JSON (listes de médecins, rendez-vous...) :
+// moins d'octets transférés, donc moins d'énergie consommée sur le
+// réseau et côté client, dans une optique d'éco-conception.
+app.use(compression());
 
 app.use(express.json());
 

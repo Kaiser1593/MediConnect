@@ -15,6 +15,7 @@ function Register() {
     role: "patient",
     password: "",
     confirmPassword: "",
+    consent: false,
   });
 
   const [message, setMessage] = useState({
@@ -25,11 +26,11 @@ function Register() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (event) => {
-    const { name, value } = event.target;
+    const { name, value, type, checked } = event.target;
 
     setFormData((previousData) => ({
       ...previousData,
-      [name]: value,
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
@@ -230,7 +231,13 @@ function Register() {
             </div>
 
             <label className="terms-checkbox">
-              <input type="checkbox" required />
+              <input
+                type="checkbox"
+                name="consent"
+                checked={formData.consent}
+                onChange={handleChange}
+                required
+              />
 
               <span>
                 J’accepte les conditions d’utilisation et la politique de

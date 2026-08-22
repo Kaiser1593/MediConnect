@@ -48,8 +48,24 @@ const getByDoctorId = async (doctorId) => {
   return rows;
 };
 
+// Avis rédigés par un patient donné, pour la route d'export RGPD
+// (droit d'accès à ses propres données).
+const getByPatientId = async (patientId) => {
+  const [rows] = await pool.query(
+    `SELECT id, medecin_id AS doctor_id, note AS rating, commentaire AS comment,
+            date_creation AS created_at
+     FROM avis
+     WHERE patient_id = ?
+     ORDER BY date_creation DESC`,
+    [patientId],
+  );
+
+  return rows;
+};
+
 module.exports = {
   findByAppointmentId,
   create,
   getByDoctorId,
+  getByPatientId,
 };

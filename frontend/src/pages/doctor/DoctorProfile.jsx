@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import DashboardLayout from "../../components/layout/DashboardLayout";
+import RgpdActions from "../../components/common/RgpdActions";
 import api from "../../services/api";
 
 const menu = [
@@ -276,6 +277,8 @@ function DoctorProfile() {
           </form>
         </section>
       )}
+
+      <RgpdActions />
     </DashboardLayout>
   );
 }

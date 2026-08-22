@@ -112,9 +112,12 @@ const createWithProfile = async ({
   try {
     await connection.beginTransaction();
 
+    // Le contrôleur refuse déjà l'inscription sans consentement (case à
+    // cocher obligatoire) : au moment où cette fonction est appelée, le
+    // consentement est toujours acquis, d'où le NOW() direct.
     const [result] = await connection.query(
-      `INSERT INTO utilisateurs (prenom, nom, email, mot_de_passe, role)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO utilisateurs (prenom, nom, email, mot_de_passe, role, consentement_rgpd_le)
+       VALUES (?, ?, ?, ?, ?, NOW())`,
       [firstname, lastname, email, passwordHash, ROLE_TO_DB[role]],
     );
 
@@ -148,6 +151,38 @@ const createWithProfile = async ({
   }
 };
 
+// Toutes les données personnelles brutes stockées dans utilisateurs,
+// pour le droit d'accès RGPD (route d'export). Volontairement séparée de
+// findById : ce n'est pas la même donnée (ici sans traduction de
+// présentation), ni le même usage (fichier téléchargeable, pas affichage).
+const exportAccountData = async (id) => {
+  const [rows] = await pool.query(
+    `SELECT prenom, nom, email, telephone, role, statut_compte,
+            date_creation, consentement_rgpd_le
+     FROM utilisateurs WHERE id = ? LIMIT 1`,
+    [id],
+  );
+
+  return rows[0] || null;
+};
+
+// Droit à l'effacement RGPD : remplace les données personnelles
+// identifiantes (nom, e-mail, mot de passe) et suspend le compte, mais ne
+// supprime jamais la ligne — les rendez-vous et avis qui en dépendent
+// (contraintes ON DELETE CASCADE) doivent survivre à la demande d'un
+// patient ou d'un médecin, pour la continuité des dossiers concernés.
+// Voir aussi patientModel.updateProfile / doctorModel.updateOwnProfile,
+// appelés par le service pour effacer les champs restants (adresse...).
+const anonymizeAccount = async (id, { anonymizedEmail, passwordHash }) => {
+  await pool.query(
+    `UPDATE utilisateurs
+     SET prenom = 'Compte', nom = 'supprimé', email = ?, mot_de_passe = ?,
+         statut_compte = 'SUSPENDU'
+     WHERE id = ?`,
+    [anonymizedEmail, passwordHash, id],
+  );
+};
+
 module.exports = {
   findByEmail,
   findById,
@@ -155,4 +190,6 @@ module.exports = {
   updatePassword,
   emailExists,
   createWithProfile,
+  exportAccountData,
+  anonymizeAccount,
 };

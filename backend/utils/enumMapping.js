@@ -46,6 +46,7 @@ const EVENT_TYPE_TO_DB = {
   // fonctionnalité de changement de rôle par un administrateur n'existe
   // dans cette version de l'application (voir database/CHANGELOG.md).
   ROLE_CHANGED: "MODIFICATION_ROLE",
+  ACCOUNT_ANONYMIZED: "COMPTE_ANONYMISE",
 };
 
 const EVENT_TYPE_FROM_DB = Object.fromEntries(

@@ -11,6 +11,8 @@ const {
   forgotPassword,
   resetPassword,
   logoutUser,
+  exportMyData,
+  deleteMyAccount,
 } = require("../controllers/authController");
 
 const { protect } = require("../middleware/authMiddleware");
@@ -93,5 +95,7 @@ router.post("/reset-password", resetPassword);
 router.get("/me", protect, getCurrentUser);
 router.patch("/password", protect, changePassword);
 router.post("/logout", protect, logoutUser);
+router.get("/me/export", protect, exportMyData);
+router.delete("/me", protect, deleteMyAccount);
 
 module.exports = router;

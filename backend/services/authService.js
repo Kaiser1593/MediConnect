@@ -6,6 +6,11 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 
 const userModel = require("../models/userModel");
+const patientModel = require("../models/patientModel");
+const doctorModel = require("../models/doctorModel");
+const appointmentModel = require("../models/appointmentModel");
+const reviewModel = require("../models/reviewModel");
+const notificationModel = require("../models/notificationModel");
 const passwordResetModel = require("../models/passwordResetModel");
 const { generateToken } = require("../utils/generateToken");
 const { logSecurityEvent } = require("../utils/logger");
@@ -238,6 +243,101 @@ const logout = async ({ token }) => {
   await cacheService.blacklistToken(token, ttlSeconds);
 };
 
+// Droit d'accès RGPD : renvoie toutes les données personnelles détenues
+// sur l'utilisateur, dans un format destiné à être téléchargé, pas
+// affiché (voir authController.exportMyData).
+const exportPersonalData = async ({ userId, role }) => {
+  const account = await userModel.exportAccountData(userId);
+
+  let profile = null;
+  let appointments = [];
+  let reviews = [];
+
+  if (role === "patient") {
+    profile = await patientModel.getProfileByUserId(userId);
+
+    const patient = await patientModel.findByUserId(userId);
+    if (patient) {
+      appointments = await appointmentModel.getAllByPatientId(patient.id);
+      reviews = await reviewModel.getByPatientId(patient.id);
+    }
+  } else if (role === "doctor") {
+    profile = await doctorModel.getOwnProfile(userId);
+
+    const doctor = await doctorModel.findByUserId(userId);
+    if (doctor) {
+      appointments = await appointmentModel.getAllByDoctorId(doctor.id);
+    }
+  }
+
+  const notifications = await notificationModel.getByUserId(userId);
+
+  return {
+    exportedAt: new Date().toISOString(),
+    account,
+    profile,
+    appointments,
+    reviews,
+    notifications,
+  };
+};
+
+// Droit à l'effacement RGPD. N'efface jamais la ligne utilisateurs (ni les
+// rendez-vous/avis qui en dépendent, protégés par ON DELETE CASCADE sur
+// patients/medecins) : anonymise à la place, pour que l'historique
+// médical reste cohérent pour l'autre partie (médecin ou patient) tout en
+// retirant les données personnelles identifiantes. Voir CHANGELOG pour la
+// justification complète.
+const deleteAccount = async ({ userId, role, token, ipAddress, userAgent }) => {
+  const anonymizedEmail = `compte-supprime-${userId}@anonymise.mediconnect.local`;
+  const passwordHash = await hashPassword(crypto.randomBytes(32).toString("hex"));
+
+  await userModel.anonymizeAccount(userId, { anonymizedEmail, passwordHash });
+
+  if (role === "patient") {
+    await patientModel.updateProfile(userId, {
+      firstname: "Compte",
+      lastname: "supprimé",
+      phone: null,
+      birthDate: null,
+      gender: null,
+      address: null,
+      city: null,
+      postalCode: null,
+    });
+  } else if (role === "doctor") {
+    const current = await doctorModel.getOwnProfile(userId);
+
+    await doctorModel.updateOwnProfile(userId, {
+      firstname: "Compte",
+      lastname: "supprimé",
+      phone: null,
+      specialtyId: current?.specialty_id || null,
+      licenseNumber: current?.license_number || null,
+      biography: null,
+      address: null,
+      city: null,
+      postalCode: null,
+      consultationPrice: current?.consultation_price || null,
+      experienceYears: current?.experience_years || null,
+    });
+
+    await doctorModel.revokeValidation(userId);
+  }
+
+  const decoded = jwt.decode(token);
+  const ttlSeconds = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 0;
+  await cacheService.blacklistToken(token, ttlSeconds);
+
+  logSecurityEvent({
+    userId,
+    eventType: "ACCOUNT_ANONYMIZED",
+    message: "Compte anonymisé à la demande de l'utilisateur (droit à l'effacement RGPD).",
+    ipAddress,
+    userAgent,
+  });
+};
+
 module.exports = {
   register,
   login,
@@ -245,4 +345,6 @@ module.exports = {
   requestPasswordReset,
   resetPassword,
   logout,
+  exportPersonalData,
+  deleteAccount,
 };

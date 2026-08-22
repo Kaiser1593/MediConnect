@@ -1,31 +1,36 @@
+import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+// Chargées à la demande : chaque page ne part sur le réseau que la
+// première fois qu'elle est visitée, au lieu de tout regrouper dans un
+// seul gros fichier téléchargé dès l'accueil (éco-conception : moins de
+// données transférées pour un visiteur qui ne consulte que 1 ou 2 pages).
 import Home from "./pages/Home";
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
-import ForgotPassword from "./pages/auth/ForgotPassword";
-import ResetPassword from "./pages/auth/ResetPassword";
-import PatientDashboard from "./pages/patient/PatientDashboard";
-import DoctorSearch from "./pages/patient/DoctorSearch";
-import AppointmentBooking from "./pages/patient/AppointmentBooking";
-import MyAppointments from "./pages/patient/MyAppointments";
-import PatientProfile from "./pages/patient/PatientProfile";
-import DoctorDashboard from "./pages/doctor/DoctorDashboard";
-import MyAgenda from "./pages/doctor/MyAgenda";
-import DoctorProfile from "./pages/doctor/DoctorProfile";
-import DoctorPatients from "./pages/doctor/DoctorPatients";
-import DoctorAvailabilities from "./pages/doctor/DoctorAvailabilities";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminDoctors from "./pages/admin/AdminDoctors";
-import AdminAppointments from "./pages/admin/AdminAppointments";
-import AdminStatistics from "./pages/admin/AdminStatistics";
-import AdminLogs from "./pages/admin/AdminLogs";
-import AdminSettings from "./pages/admin/AdminSettings";
+const Login = lazy(() => import("./pages/auth/Login"));
+const Register = lazy(() => import("./pages/auth/Register"));
+const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/auth/ResetPassword"));
+const PatientDashboard = lazy(() => import("./pages/patient/PatientDashboard"));
+const DoctorSearch = lazy(() => import("./pages/patient/DoctorSearch"));
+const AppointmentBooking = lazy(() => import("./pages/patient/AppointmentBooking"));
+const MyAppointments = lazy(() => import("./pages/patient/MyAppointments"));
+const PatientProfile = lazy(() => import("./pages/patient/PatientProfile"));
+const DoctorDashboard = lazy(() => import("./pages/doctor/DoctorDashboard"));
+const MyAgenda = lazy(() => import("./pages/doctor/MyAgenda"));
+const DoctorProfile = lazy(() => import("./pages/doctor/DoctorProfile"));
+const DoctorPatients = lazy(() => import("./pages/doctor/DoctorPatients"));
+const DoctorAvailabilities = lazy(() => import("./pages/doctor/DoctorAvailabilities"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminDoctors = lazy(() => import("./pages/admin/AdminDoctors"));
+const AdminAppointments = lazy(() => import("./pages/admin/AdminAppointments"));
+const AdminStatistics = lazy(() => import("./pages/admin/AdminStatistics"));
+const AdminLogs = lazy(() => import("./pages/admin/AdminLogs"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 
 import "./App.css";
 
@@ -43,6 +48,7 @@ function PublicPage({ children }) {
 function App() {
   return (
     <div className="app">
+      <Suspense fallback={<p className="route-loading">Chargement…</p>}>
       <Routes>
         <Route
           path="/"
@@ -245,6 +251,7 @@ function App() {
           }
         />
       </Routes>
+      </Suspense>
     </div>
   );
 }

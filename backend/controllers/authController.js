@@ -7,7 +7,7 @@ const authService = require("../services/authService");
 
 const registerUser = async (req, res, next) => {
   try {
-    const { firstname, lastname, email, role, password, confirmPassword } =
+    const { firstname, lastname, email, role, password, confirmPassword, consent } =
       req.body;
 
     if (
@@ -21,6 +21,17 @@ const registerUser = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: "Tous les champs obligatoires doivent être renseignés.",
+      });
+    }
+
+    // La case "J'accepte les conditions d'utilisation et la politique de
+    // confidentialité" (voir Register.jsx) est le recueil du consentement
+    // RGPD : sans elle, pas de création de compte. Contrôlée ici, pas
+    // seulement côté client, comme le reste de ce formulaire.
+    if (consent !== true) {
+      return res.status(400).json({
+        success: false,
+        message: "Vous devez accepter les conditions d'utilisation et la politique de confidentialité.",
       });
     }
 
@@ -239,6 +250,50 @@ const logoutUser = async (req, res, next) => {
   }
 };
 
+// Droit d'accès RGPD : renvoie l'ensemble des données personnelles de
+// l'utilisateur connecté, sous forme de fichier JSON téléchargeable.
+const exportMyData = async (req, res, next) => {
+  try {
+    const data = await authService.exportPersonalData({
+      userId: req.user.id,
+      role: req.user.role,
+    });
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="mediconnect-donnees-personnelles.json"`,
+    );
+
+    return res.status(200).json({ success: true, ...data });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Droit à l'effacement RGPD : anonymise le compte (voir authService.deleteAccount
+// pour la raison de l'anonymisation plutôt qu'une suppression réelle) et
+// révoque immédiatement le token en cours.
+const deleteMyAccount = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+
+    await authService.deleteAccount({
+      userId: req.user.id,
+      role: req.user.role,
+      token,
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Votre compte a été supprimé et vos données personnelles anonymisées.",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -247,4 +302,6 @@ module.exports = {
   forgotPassword,
   resetPassword,
   logoutUser,
+  exportMyData,
+  deleteMyAccount,
 };

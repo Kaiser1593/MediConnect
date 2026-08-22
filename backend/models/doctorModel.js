@@ -239,8 +239,21 @@ const getUserIdById = async (doctorId) => {
   return rows[0] ? rows[0].utilisateur_id : null;
 };
 
+// Retire le médecin des résultats de recherche publics, sans supprimer sa
+// fiche : appelée lors d'une demande de suppression de compte (droit à
+// l'effacement RGPD), pour que ses rendez-vous passés restent rattachés à
+// un médecin identifiable dans l'historique, sans rester visible à de
+// nouveaux patients.
+const revokeValidation = async (userId) => {
+  await pool.query(
+    "UPDATE medecins SET est_valide = FALSE WHERE utilisateur_id = ?",
+    [userId],
+  );
+};
+
 module.exports = {
   searchPublic,
+  revokeValidation,
   getPublicById,
   findByUserId,
   getUserIdById,

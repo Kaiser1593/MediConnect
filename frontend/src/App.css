@@ -1234,6 +1234,49 @@
   box-shadow: 0 12px 26px rgba(52, 120, 246, 0.25);
 }
 
+.rgpd-panel {
+  margin-top: 24px;
+}
+
+.rgpd-panel p {
+  color: #667085;
+  font-size: 14px;
+  margin: 8px 0 18px;
+}
+
+.rgpd-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.secondary-dashboard-button,
+.danger-dashboard-button {
+  padding: 12px 20px;
+  border-radius: 9px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.secondary-dashboard-button {
+  color: #3478f6;
+  background: #ffffff;
+  border-color: #3478f6;
+}
+
+.secondary-dashboard-button:hover {
+  background: #eef4ff;
+}
+
+.danger-dashboard-button {
+  color: #ffffff;
+  background: #e5484d;
+}
+
+.danger-dashboard-button:hover {
+  background: #d13c41;
+}
+
 .quick-actions-panel {
   margin-top: 24px;
 }

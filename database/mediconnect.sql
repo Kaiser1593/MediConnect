@@ -46,6 +46,9 @@ CREATE TABLE utilisateurs (
   role           ENUM('PATIENT', 'MEDECIN', 'ADMIN') NOT NULL DEFAULT 'PATIENT',
   telephone      VARCHAR(20)  NULL,
   statut_compte  ENUM('ACTIF', 'SUSPENDU') NOT NULL DEFAULT 'ACTIF',
+  -- Horodatage du consentement RGPD donné à l'inscription (case à cocher
+  -- du formulaire). NULL pour un compte créé avant l'ajout de ce contrôle.
+  consentement_rgpd_le DATETIME NULL,
   date_creation  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   date_modification TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                               ON UPDATE CURRENT_TIMESTAMP,
