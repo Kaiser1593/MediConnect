@@ -54,12 +54,27 @@ router.post(
 router.get("/", protect, authorize("patient", "doctor"), listMyAppointments);
 router.get("/me", protect, authorize("patient", "doctor"), getMyDashboard);
 
-router.patch(
-  "/:id/cancel",
-  protect,
-  authorize("patient", "doctor"),
-  cancelAppointment,
-);
+// Le dossier documente ces trois routes en PUT (§3.5) ; PATCH est le verbe
+// sémantiquement correct pour une mise à jour partielle, on déclare donc
+// les deux sur le même handler pour rester compatible avec le dossier.
+router
+  .route("/:id/cancel")
+  .put(protect, authorize("patient", "doctor"), cancelAppointment)
+  .patch(protect, authorize("patient", "doctor"), cancelAppointment);
+
+// Alias de confirmation/annulation réservés au médecin, sous les noms
+// utilisés par le dossier : "accept" (= confirmer) et "refuse" (= annuler
+// une demande en attente). Même logique métier que /confirm et /cancel,
+// pas de duplication de code.
+router
+  .route("/:id/accept")
+  .put(protect, authorize("doctor"), confirmAppointment)
+  .patch(protect, authorize("doctor"), confirmAppointment);
+
+router
+  .route("/:id/refuse")
+  .put(protect, authorize("doctor"), cancelAppointment)
+  .patch(protect, authorize("doctor"), cancelAppointment);
 
 // Réservée au patient, comme la réservation initiale : annule puis
 // recrée le rendez-vous au nouveau créneau (voir appointmentService).

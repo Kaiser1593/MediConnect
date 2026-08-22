@@ -145,9 +145,43 @@ const approveDoctor = async (req, res, next) => {
   }
 };
 
+// Partagé par updateUserStatus (activation/désactivation via le corps de la
+// requête) et banUser (alias "/ban" du dossier, toujours une désactivation).
+const applyUserActiveStatus = async (req, res, is_active) => {
+  const targetId = Number(req.params.id);
+
+  if (targetId === req.user.id) {
+    return res.status(400).json({
+      success: false,
+      message: "Vous ne pouvez pas modifier le statut de votre propre compte.",
+    });
+  }
+
+  const updated = await adminModel.setUserActiveStatus(targetId, is_active);
+
+  if (!updated) {
+    return res.status(404).json({
+      success: false,
+      message: "Utilisateur introuvable.",
+    });
+  }
+
+  logSecurityEvent({
+    userId: req.user.id,
+    eventType: "USER_STATUS_CHANGED",
+    message: `Compte #${targetId} ${is_active ? "activé" : "désactivé"} par l'administrateur.`,
+    ipAddress: req.ip,
+    userAgent: req.headers["user-agent"],
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: is_active ? "Compte activé." : "Compte désactivé.",
+  });
+};
+
 const updateUserStatus = async (req, res, next) => {
   try {
-    const targetId = Number(req.params.id);
     const { is_active } = req.body;
 
     if (typeof is_active !== "boolean") {
@@ -157,34 +191,19 @@ const updateUserStatus = async (req, res, next) => {
       });
     }
 
-    if (targetId === req.user.id) {
-      return res.status(400).json({
-        success: false,
-        message: "Vous ne pouvez pas modifier le statut de votre propre compte.",
-      });
-    }
+    return await applyUserActiveStatus(req, res, is_active);
+  } catch (error) {
+    return next(error);
+  }
+};
 
-    const updated = await adminModel.setUserActiveStatus(targetId, is_active);
-
-    if (!updated) {
-      return res.status(404).json({
-        success: false,
-        message: "Utilisateur introuvable.",
-      });
-    }
-
-    logSecurityEvent({
-      userId: req.user.id,
-      eventType: "USER_STATUS_CHANGED",
-      message: `Compte #${targetId} ${is_active ? "activé" : "désactivé"} par l'administrateur.`,
-      ipAddress: req.ip,
-      userAgent: req.headers["user-agent"],
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: is_active ? "Compte activé." : "Compte désactivé.",
-    });
+// Alias "PUT /api/admin/users/:id/ban" du dossier (§3.5) : bannir signifie
+// toujours désactiver, aucun corps de requête n'est nécessaire. Réutilise la
+// même logique que updateUserStatus (utilisée par l'interface d'administration
+// sous /status, qui gère aussi la réactivation).
+const banUser = async (req, res, next) => {
+  try {
+    return await applyUserActiveStatus(req, res, false);
   } catch (error) {
     return next(error);
   }
@@ -227,5 +246,6 @@ module.exports = {
   getStatistics,
   approveDoctor,
   updateUserStatus,
+  banUser,
   getLogs,
 };
