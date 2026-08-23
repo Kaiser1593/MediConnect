@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import DashboardLayout from "../../components/layout/DashboardLayout";
-import useAuth from "../../hooks/useAuth";
 import api from "../../services/api";
 
 const menu = [
@@ -28,11 +27,15 @@ const formatTime = (time) => time.slice(0, 5).replace(":", " h ");
 const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 
 function DoctorDashboard() {
-  const { user } = useAuth();
-
   const [stats, setStats] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [availabilities, setAvailabilities] = useState([]);
+  // Récupéré à chaque chargement du tableau de bord, pas lu depuis le
+  // contexte d'authentification (mis en cache à la connexion) : sinon la
+  // bannière reste affichée après une validation par un administrateur
+  // tant que le médecin ne se déconnecte/reconnecte pas.
+  const [isApproved, setIsApproved] = useState(true);
+  const [hasSpecialty, setHasSpecialty] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [confirmingId, setConfirmingId] = useState(null);
@@ -47,6 +50,8 @@ function DoctorDashboard() {
         setStats(response.data.stats);
         setAppointments(response.data.appointments);
         setAvailabilities(response.data.availabilities);
+        setIsApproved(Boolean(response.data.isApproved));
+        setHasSpecialty(Boolean(response.data.hasSpecialty));
       } catch {
         setError("Impossible de charger votre tableau de bord.");
       } finally {
@@ -96,7 +101,7 @@ function DoctorDashboard() {
       subtitle="Gérez votre activité et vos rendez-vous."
       menu={menu}
     >
-      {!user.is_approved && (
+      {!isApproved && !isLoading && (
         <div className="approval-banner">
           <span className="approval-banner-icon">!</span>
           <div>
@@ -104,6 +109,21 @@ function DoctorDashboard() {
             <span>
               Un administrateur doit valider votre compte avant qu'il
               n'apparaisse dans les résultats de recherche des patients.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {isApproved && !hasSpecialty && !isLoading && (
+        <div className="approval-banner">
+          <span className="approval-banner-icon">!</span>
+          <div>
+            <strong>Spécialité non renseignée</strong>
+            <span>
+              Complétez votre spécialité dans{" "}
+              <Link to="/doctor/profil">votre profil</Link> : sans elle, vous
+              n'apparaissez pas quand un patient filtre sa recherche par
+              spécialité.
             </span>
           </div>
         </div>

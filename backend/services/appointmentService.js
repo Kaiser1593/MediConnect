@@ -223,7 +223,22 @@ const getDoctorDashboard = async (userId) => {
     doctorModel.getWeeklyAvailabilities(doctor.id),
   ]);
 
-  return { stats, appointments, availabilities };
+  // isApproved reflète l'état réel en base, pas l'utilisateur mis en
+  // cache côté client à la connexion (voir DoctorDashboard.jsx) : sans
+  // ça, la bannière "en attente de validation" reste affichée après une
+  // validation par un administrateur tant que le médecin ne se
+  // reconnecte pas.
+  // hasSpecialty : un médecin sans spécialité renseignée n'apparaît dans
+  // aucune recherche filtrée par spécialité, même une fois son compte
+  // validé — sans avertissement, ce n'est jamais visible depuis son
+  // propre tableau de bord.
+  return {
+    stats,
+    appointments,
+    availabilities,
+    isApproved: doctor.is_approved,
+    hasSpecialty: Boolean(doctor.specialty_id),
+  };
 };
 
 // Liste complète des rendez-vous de l'utilisateur connecté, quel que

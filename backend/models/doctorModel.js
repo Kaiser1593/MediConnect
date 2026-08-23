@@ -94,7 +94,7 @@ const getPublicById = async (doctorId) => {
 const findByUserId = async (userId) => {
   const [rows] = await pool.query(
     `SELECT id, utilisateur_id AS user_id, duree_creneau AS slot_duration,
-            est_valide AS is_approved
+            est_valide AS is_approved, specialite_id AS specialty_id
      FROM medecins WHERE utilisateur_id = ? LIMIT 1`,
     [userId],
   );
