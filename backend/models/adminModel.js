@@ -33,8 +33,11 @@ const getStats = async () => {
     "SELECT COUNT(*) AS total FROM medecins WHERE est_valide = FALSE",
   );
 
+  // "Planifiés" = acceptés par un médecin (statut CONFIRME), pas toute
+  // demande de RDV : une demande encore en attente ou refusée n'est pas
+  // "planifiée" au sens où l'utilise ce tableau de bord.
   const [[appointmentRow]] = await pool.query(
-    "SELECT COUNT(*) AS total FROM rendez_vous",
+    "SELECT COUNT(*) AS total FROM rendez_vous WHERE statut = 'CONFIRME'",
   );
 
   return {

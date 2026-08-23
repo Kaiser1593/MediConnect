@@ -191,7 +191,7 @@ function AdminDashboard() {
               <div>
                 <span>Rendez-vous planifiés</span>
                 <strong>{stats.totalAppointments}</strong>
-                <p>Toutes périodes confondues</p>
+                <p>Acceptés par un médecin, toutes périodes</p>
               </div>
             </article>
 

@@ -236,23 +236,17 @@ function PatientDashboard() {
             <small>Rechercher un professionnel</small>
           </Link>
 
-          <button type="button">
+          <Link to="/patient/rendez-vous">
             <span>□</span>
             <strong>Mes rendez-vous</strong>
             <small>Consulter votre historique</small>
-          </button>
+          </Link>
 
-          <button type="button">
+          <Link to="/patient/profil">
             <span>○</span>
             <strong>Mettre à jour mon profil</strong>
             <small>Modifier vos informations</small>
-          </button>
-
-          <button type="button">
-            <span>!</span>
-            <strong>Mes documents</strong>
-            <small>Voir vos documents médicaux</small>
-          </button>
+          </Link>
         </div>
       </section>
     </DashboardLayout>
