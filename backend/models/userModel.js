@@ -46,8 +46,8 @@ const findByEmail = async (email) => {
 const findById = async (id) => {
   const [rows] = await pool.query(
     `SELECT u.id, u.prenom AS firstname, u.nom AS lastname, u.email, u.role,
-            u.telephone AS phone, u.statut_compte, u.date_creation AS created_at,
-            m.est_valide AS is_approved
+            u.telephone AS phone, u.avatar AS avatar_url, u.statut_compte,
+            u.date_creation AS created_at, m.est_valide AS is_approved
      FROM utilisateurs u
      LEFT JOIN medecins m ON m.utilisateur_id = u.id
      WHERE u.id = ?
@@ -65,10 +65,29 @@ const findById = async (id) => {
     email: row.email,
     role: ROLE_FROM_DB[row.role],
     phone: row.phone,
+    avatar_url: row.avatar_url,
     is_active: accountStatusFromDb(row.statut_compte),
     created_at: row.created_at,
     is_approved: row.is_approved,
   };
+};
+
+// Chemin de l'avatar actuel, pour pouvoir supprimer l'ancien fichier du
+// disque avant d'enregistrer le nouveau (voir authService.uploadAvatar).
+const findAvatarById = async (id) => {
+  const [rows] = await pool.query(
+    "SELECT avatar FROM utilisateurs WHERE id = ? LIMIT 1",
+    [id],
+  );
+
+  return rows[0]?.avatar || null;
+};
+
+const updateAvatar = async (id, avatarUrl) => {
+  await pool.query("UPDATE utilisateurs SET avatar = ? WHERE id = ?", [
+    avatarUrl,
+    id,
+  ]);
 };
 
 // Utilisé pour vérifier le mot de passe actuel avant de le changer.
@@ -203,6 +222,8 @@ const hardDelete = async (id) => {
 module.exports = {
   findByEmail,
   findById,
+  findAvatarById,
+  updateAvatar,
   findPasswordHashById,
   updatePassword,
   emailExists,

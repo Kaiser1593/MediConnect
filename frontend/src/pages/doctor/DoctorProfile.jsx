@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import RgpdActions from "../../components/common/RgpdActions";
+import AvatarUploader from "../../components/common/AvatarUploader";
 import api from "../../services/api";
 
 const menu = [
@@ -120,6 +121,8 @@ function DoctorProfile() {
         <p className="route-loading">Chargement…</p>
       ) : (
         <section className="dashboard-panel">
+          <AvatarUploader />
+
           {message.text && (
             <div className={`form-message ${message.type}`} role="alert">
               {message.text}

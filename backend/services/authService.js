@@ -3,7 +3,11 @@
 // validation du format des champs et la construction de la réponse HTTP.
 
 const crypto = require("crypto");
+const fs = require("fs/promises");
+const path = require("path");
 const jwt = require("jsonwebtoken");
+
+const { AVATARS_DIR } = require("../middleware/uploadMiddleware");
 
 const userModel = require("../models/userModel");
 const patientModel = require("../models/patientModel");
@@ -354,6 +358,46 @@ const deleteAccount = async ({
   });
 };
 
+// Supprime un ancien fichier d'avatar du disque. "Best effort" comme la
+// journalisation : un fichier déjà absent (ou un chemin externe hérité
+// d'une future intégration) ne doit jamais faire échouer la requête en
+// cours.
+const deleteAvatarFile = async (avatarUrl) => {
+  if (!avatarUrl) return;
+
+  const filename = path.basename(avatarUrl);
+  const filePath = path.join(AVATARS_DIR, filename);
+
+  try {
+    await fs.unlink(filePath);
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      console.error("Échec de la suppression de l'ancien avatar :", error.message);
+    }
+  }
+};
+
+// Remplace la photo de profil : l'ancien fichier (s'il existe) est
+// supprimé une fois le nouveau enregistré en base, jamais avant — en cas
+// d'échec de l'écriture en base, l'ancien avatar reste donc valide plutôt
+// que de laisser le compte sans photo.
+const uploadAvatar = async ({ userId, filename }) => {
+  const previousAvatarUrl = await userModel.findAvatarById(userId);
+  const avatarUrl = `/uploads/avatars/${filename}`;
+
+  await userModel.updateAvatar(userId, avatarUrl);
+  await deleteAvatarFile(previousAvatarUrl);
+
+  return avatarUrl;
+};
+
+const removeAvatar = async ({ userId }) => {
+  const previousAvatarUrl = await userModel.findAvatarById(userId);
+
+  await userModel.updateAvatar(userId, null);
+  await deleteAvatarFile(previousAvatarUrl);
+};
+
 module.exports = {
   register,
   login,
@@ -363,4 +407,6 @@ module.exports = {
   logout,
   exportPersonalData,
   deleteAccount,
+  uploadAvatar,
+  removeAvatar,
 };

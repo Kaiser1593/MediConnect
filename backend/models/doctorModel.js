@@ -62,6 +62,7 @@ const getPublicById = async (doctorId) => {
        u.prenom            AS firstname,
        u.nom               AS lastname,
        CONCAT('Dr ', u.prenom, ' ', u.nom) AS full_name,
+       u.avatar            AS avatar_url,
        s.nom               AS specialty,
        m.biographie        AS biography,
        m.adresse           AS address,
@@ -79,7 +80,7 @@ const getPublicById = async (doctorId) => {
      WHERE m.id = ?
        AND m.est_valide     = TRUE
        AND u.statut_compte  = 'ACTIF'
-     GROUP BY m.id, u.prenom, u.nom, s.nom, m.biographie, m.adresse,
+     GROUP BY m.id, u.prenom, u.nom, u.avatar, s.nom, m.biographie, m.adresse,
               m.ville, m.code_postal, m.prix_consultation, m.annees_experience,
               m.duree_creneau`,
     [doctorId],

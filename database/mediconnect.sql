@@ -46,6 +46,11 @@ CREATE TABLE utilisateurs (
   role           ENUM('PATIENT', 'MEDECIN', 'ADMIN') NOT NULL DEFAULT 'PATIENT',
   telephone      VARCHAR(20)  NULL,
   statut_compte  ENUM('ACTIF', 'SUSPENDU') NOT NULL DEFAULT 'ACTIF',
+  -- Chemin public du fichier de photo de profil (ex. "/uploads/avatars/...")
+  -- stocké sur le disque du serveur (backend/uploads/avatars/), jamais en
+  -- base : seule la référence y est conservée. NULL = aucune photo, le
+  -- frontend affiche alors des initiales.
+  avatar         VARCHAR(255) NULL,
   -- Horodatage du consentement RGPD donné à l'inscription (case à cocher
   -- du formulaire). NULL pour un compte créé avant l'ajout de ce contrôle.
   consentement_rgpd_le DATETIME NULL,
@@ -293,6 +298,7 @@ SELECT
   u.prenom            AS firstname,
   u.nom               AS lastname,
   CONCAT('Dr ', u.prenom, ' ', u.nom) AS full_name,
+  u.avatar            AS avatar_url,
   s.nom               AS specialty,
   m.ville             AS city,
   m.code_postal       AS postal_code,
@@ -307,5 +313,5 @@ LEFT JOIN specialites s ON s.id = m.specialite_id
 LEFT JOIN avis a        ON a.medecin_id = m.id
 WHERE m.est_valide    = TRUE
   AND u.statut_compte = 'ACTIF'
-GROUP BY m.id, u.prenom, u.nom, s.nom, m.ville,
+GROUP BY m.id, u.prenom, u.nom, u.avatar, s.nom, m.ville,
          m.code_postal, m.prix_consultation, m.annees_experience, m.duree_creneau;

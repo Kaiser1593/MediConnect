@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 
 import DashboardLayout from "../../components/layout/DashboardLayout";
+import Avatar from "../../components/common/Avatar";
 import api from "../../services/api";
 
 const menu = [
@@ -219,9 +220,12 @@ function AppointmentBooking() {
         <section className="booking-grid">
           <article className="dashboard-panel">
             <div className="booking-doctor">
-              <div className="large-avatar">
-                {`${doctor.firstname[0]}${doctor.lastname[0]}`.toUpperCase()}
-              </div>
+              <Avatar
+                avatarUrl={doctor.avatar_url}
+                firstname={doctor.firstname}
+                lastname={doctor.lastname}
+                size="large"
+              />
 
               <div>
                 <h2>{doctor.full_name}</h2>

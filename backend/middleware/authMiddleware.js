@@ -51,7 +51,7 @@ const protect = async (req, res, next) => {
     req.user = { id: decoded.id, role: decoded.role };
 
     return next();
-  } catch (error) {
+  } catch {
     logSecurityEvent({
       userId: null,
       eventType: "ACCESS_DENIED",

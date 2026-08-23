@@ -5,11 +5,17 @@ node_modules/
 .env
 .env.local
 .env.*.local
+.env.test
 
 # Fichiers générés
 dist/
 build/
 coverage/
+
+# Fichiers uploadés par les utilisateurs (avatars) : contenu, pas code.
+# Le dossier lui-même reste suivi via backend/uploads/avatars/.gitkeep.
+backend/uploads/avatars/*
+!backend/uploads/avatars/.gitkeep
 
 # Logs
 *.log

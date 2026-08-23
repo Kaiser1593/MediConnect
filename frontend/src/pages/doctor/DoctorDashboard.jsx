@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import DashboardLayout from "../../components/layout/DashboardLayout";
+import Avatar from "../../components/common/Avatar";
 import api from "../../services/api";
 
 const menu = [
@@ -205,9 +206,11 @@ function DoctorDashboard() {
                       </div>
 
                       <div className="appointment-doctor">
-                        <div className="small-avatar">
-                          {`${appointment.firstname[0]}${appointment.lastname[0]}`.toUpperCase()}
-                        </div>
+                        <Avatar
+                          avatarUrl={appointment.avatar_url}
+                          firstname={appointment.firstname}
+                          lastname={appointment.lastname}
+                        />
 
                         <div>
                           <strong>

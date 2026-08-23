@@ -113,7 +113,7 @@ const getPatientStats = async (patientId, today) => {
 const getPatientAppointments = async (patientId, today, limit) => {
   const [rows] = await pool.query(
     `SELECT a.id, a.date_rdv AS scheduled_on, a.heure_debut AS start_time, a.statut,
-            u.prenom AS firstname, u.nom AS lastname,
+            u.prenom AS firstname, u.nom AS lastname, u.avatar AS avatar_url,
             CONCAT('Dr ', u.prenom, ' ', u.nom) AS doctor_name,
             s.nom AS specialty
      FROM rendez_vous a
@@ -170,7 +170,7 @@ const getDoctorStats = async (doctorId, today) => {
 const getDoctorTodayAppointments = async (doctorId, today) => {
   const [rows] = await pool.query(
     `SELECT a.id, a.heure_debut AS start_time, a.statut, a.motif AS reason,
-            u.prenom AS firstname, u.nom AS lastname
+            u.prenom AS firstname, u.nom AS lastname, u.avatar AS avatar_url
      FROM rendez_vous a
      JOIN patients p ON p.id = a.patient_id
      JOIN utilisateurs u ON u.id = p.utilisateur_id
@@ -190,7 +190,7 @@ const getAllByPatientId = async (patientId) => {
   const [rows] = await pool.query(
     `SELECT a.id, a.date_rdv AS scheduled_on, a.heure_debut AS start_time,
             a.statut, a.motif AS reason, a.medecin_id AS doctor_id,
-            u.prenom AS firstname, u.nom AS lastname,
+            u.prenom AS firstname, u.nom AS lastname, u.avatar AS avatar_url,
             CONCAT('Dr ', u.prenom, ' ', u.nom) AS doctor_name,
             s.nom AS specialty,
             av.id AS review_id, av.note AS review_rating
@@ -212,7 +212,7 @@ const getAllByDoctorId = async (doctorId) => {
   const [rows] = await pool.query(
     `SELECT a.id, a.date_rdv AS scheduled_on, a.heure_debut AS start_time,
             a.statut, a.motif AS reason,
-            u.prenom AS firstname, u.nom AS lastname
+            u.prenom AS firstname, u.nom AS lastname, u.avatar AS avatar_url
      FROM rendez_vous a
      JOIN patients p ON p.id = a.patient_id
      JOIN utilisateurs u ON u.id = p.utilisateur_id

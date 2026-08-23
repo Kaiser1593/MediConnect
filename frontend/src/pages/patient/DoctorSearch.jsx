@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import DashboardLayout from "../../components/layout/DashboardLayout";
+import Avatar from "../../components/common/Avatar";
 import api from "../../services/api";
 
 const menu = [
@@ -10,9 +11,6 @@ const menu = [
   { label: "Mes rendez-vous", path: "/patient/rendez-vous", icon: "□" },
   { label: "Mon profil", path: "/patient/profil", icon: "○" },
 ];
-
-const getInitials = (firstname, lastname) =>
-  `${firstname[0]}${lastname[0]}`.toUpperCase();
 
 function DoctorSearch() {
   const [specialties, setSpecialties] = useState([]);
@@ -139,9 +137,12 @@ function DoctorSearch() {
         {doctors.map((doctor) => (
           <article className="doctor-card" key={doctor.doctor_id}>
             <div className="doctor-card-profile">
-              <div className="large-avatar">
-                {getInitials(doctor.firstname, doctor.lastname)}
-              </div>
+              <Avatar
+                avatarUrl={doctor.avatar_url}
+                firstname={doctor.firstname}
+                lastname={doctor.lastname}
+                size="large"
+              />
 
               <div>
                 <h3>{doctor.full_name}</h3>

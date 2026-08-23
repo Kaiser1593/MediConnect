@@ -1,3 +1,5 @@
+const path = require("path");
+
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
@@ -41,6 +43,20 @@ app.use(
 // moins d'octets transférés, donc moins d'énergie consommée sur le
 // réseau et côté client, dans une optique d'éco-conception.
 app.use(compression());
+
+// Sert les avatars uploadés (voir middleware/uploadMiddleware.js). Helmet
+// pose par défaut Cross-Origin-Resource-Policy: same-origin, qui bloquerait
+// le chargement de ces images par le frontend (autre origine en
+// développement : 5173/8080 vs 5000) même dans une simple balise <img> :
+// explicitement assoupli ici, uniquement sur ce chemin, pas globalement.
+app.use(
+  "/uploads",
+  (req, res, next) => {
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    next();
+  },
+  express.static(path.join(__dirname, "uploads")),
+);
 
 app.use(express.json());
 

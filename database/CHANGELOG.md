@@ -156,3 +156,21 @@ refusée, confirmation, replanification, clôture, avis, actions
 d'administration, journaux de sécurité, suspension de compte) — toutes les
 données réelles existantes (comptes utilisateurs, rendez-vous) ont été
 préservées.
+
+## 8. Photo de profil (avatar)
+
+Ajout d'une colonne `utilisateurs.avatar` (VARCHAR(255), NULL), absente
+de l'Annexe B pour la même raison que `consentement_rgpd_le` : une
+fonctionnalité réelle ajoutée après la conception initiale, pas une
+régression de conformité. Ne stocke que le chemin public du fichier
+(`/uploads/avatars/...`), jamais le fichier lui-même ni son contenu
+binaire : les images restent sur le disque du serveur
+(`backend/uploads/avatars/`, servi statiquement par Express), la base ne
+garde qu'une référence, comme pour tout stockage de fichiers bien conçu.
+NULL par défaut : un compte sans avatar affiche des initiales calculées
+côté frontend, jamais une image cassée.
+
+La vue `v_medecins_public` expose la colonne sous `avatar_url` (même
+frontière de traduction que le reste de la vue) : un médecin qui ajoute
+une photo la voit apparaître dans la recherche publique et sur la page de
+réservation sans changement de requête côté frontend.

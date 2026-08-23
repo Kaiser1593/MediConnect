@@ -294,6 +294,47 @@ const deleteMyAccount = async (req, res, next) => {
   }
 };
 
+// req.file est posé par le middleware uploadAvatar (multer) sur la route,
+// avant d'arriver ici : absent si aucun fichier n'a été envoyé, ou si le
+// fichier envoyé a été rejeté (type ou taille invalide, voir
+// uploadMiddleware.fileFilter/limits).
+const uploadMyAvatar = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Aucune image valide n'a été envoyée (JPEG, PNG ou WebP, 2 Mo maximum).",
+      });
+    }
+
+    const avatarUrl = await authService.uploadAvatar({
+      userId: req.user.id,
+      filename: req.file.filename,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Votre photo de profil a été mise à jour.",
+      avatarUrl,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const removeMyAvatar = async (req, res, next) => {
+  try {
+    await authService.removeAvatar({ userId: req.user.id });
+
+    return res.status(200).json({
+      success: true,
+      message: "Votre photo de profil a été supprimée.",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -304,4 +345,6 @@ module.exports = {
   logoutUser,
   exportMyData,
   deleteMyAccount,
+  uploadMyAvatar,
+  removeMyAvatar,
 };

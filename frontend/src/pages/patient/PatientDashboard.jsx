@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import DashboardLayout from "../../components/layout/DashboardLayout";
+import Avatar from "../../components/common/Avatar";
 import useAuth from "../../hooks/useAuth";
 import api from "../../services/api";
 
@@ -140,9 +141,11 @@ function PatientDashboard() {
                   {appointments.map((appointment) => (
                     <div className="appointment-row" key={appointment.id}>
                       <div className="appointment-doctor">
-                        <div className="small-avatar">
-                          {`${appointment.firstname[0]}${appointment.lastname[0]}`.toUpperCase()}
-                        </div>
+                        <Avatar
+                          avatarUrl={appointment.avatar_url}
+                          firstname={appointment.firstname}
+                          lastname={appointment.lastname}
+                        />
 
                         <div>
                           <strong>{appointment.doctor_name}</strong>
@@ -187,9 +190,12 @@ function PatientDashboard() {
               {nextAppointment ? (
                 <>
                   <div className="next-doctor">
-                    <div className="large-avatar">
-                      {`${nextAppointment.firstname[0]}${nextAppointment.lastname[0]}`.toUpperCase()}
-                    </div>
+                    <Avatar
+                      avatarUrl={nextAppointment.avatar_url}
+                      firstname={nextAppointment.firstname}
+                      lastname={nextAppointment.lastname}
+                      size="large"
+                    />
 
                     <div>
                       <h3>{nextAppointment.doctor_name}</h3>

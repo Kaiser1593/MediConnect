@@ -53,6 +53,17 @@ function AuthProvider({ children }) {
     setUser(userData);
   }, []);
 
+  // Met à jour localement un ou plusieurs champs du profil connecté (ex.
+  // avatar_url après un envoi de photo), sans re-solliciter /auth/me : la
+  // réponse de l'action qui vient de réussir contient déjà la valeur à jour.
+  const updateUser = useCallback((partialUser) => {
+    setUser((previousUser) => {
+      const nextUser = { ...previousUser, ...partialUser };
+      localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+      return nextUser;
+    });
+  }, []);
+
   const logout = useCallback(() => {
     // Le token est lu puis passé explicitement en en-tête : l'intercepteur
     // de requête (voir services/api.js) le relit depuis localStorage de
@@ -84,8 +95,9 @@ function AuthProvider({ children }) {
       isAuthenticated: Boolean(user),
       login,
       logout,
+      updateUser,
     }),
-    [user, isLoading, login, logout],
+    [user, isLoading, login, logout, updateUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

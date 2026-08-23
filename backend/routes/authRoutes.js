@@ -13,9 +13,12 @@ const {
   logoutUser,
   exportMyData,
   deleteMyAccount,
+  uploadMyAvatar,
+  removeMyAvatar,
 } = require("../controllers/authController");
 
 const { protect } = require("../middleware/authMiddleware");
+const { uploadAvatar } = require("../middleware/uploadMiddleware");
 const { validateBody } = require("../middleware/validationMiddleware");
 const { isValidEmail } = require("../utils/validators");
 
@@ -97,5 +100,7 @@ router.patch("/password", protect, changePassword);
 router.post("/logout", protect, logoutUser);
 router.get("/me/export", protect, exportMyData);
 router.delete("/me", protect, deleteMyAccount);
+router.post("/me/avatar", protect, uploadAvatar, uploadMyAvatar);
+router.delete("/me/avatar", protect, removeMyAvatar);
 
 module.exports = router;

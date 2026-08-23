@@ -1,0 +1,29 @@
+# docker-compose.test.yml
+# Conteneur MySQL dédié aux tests d'intégration backend, entièrement
+# séparé du docker-compose.yml principal : port différent (3308, pas
+# 3307), et surtout AUCUN volume nommé, donc jamais de donnée persistante.
+# Chaque "up" repart d'une base vide ; database/mediconnect.sql et
+# database/seed.sql sont chargés manuellement ensuite (voir
+# docs/PLAN_DE_TESTS.md), pas via docker-entrypoint-initdb.d, pour
+# pouvoir renommer la base en mediconnect_test au passage (mediconnect.sql
+# crée une base nommée "mediconnect" en dur).
+#
+# Usage :
+#   docker compose -f docker-compose.test.yml up -d
+#   sed 's/\bmediconnect\b/mediconnect_test/g' database/mediconnect.sql | mysql -h 127.0.0.1 -P 3308 -u root -ptest_password
+#   sed 's/\bmediconnect\b/mediconnect_test/g' database/seed.sql       | mysql -h 127.0.0.1 -P 3308 -u root -ptest_password
+#   docker compose -f docker-compose.test.yml down
+
+services:
+  mysql-test:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: test_password
+    ports:
+      - "3308:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--protocol=tcp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s

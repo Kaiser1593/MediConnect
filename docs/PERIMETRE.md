@@ -39,6 +39,34 @@ code doit trouver ici la réponse avant de la demander à l'oral.
 | Prometheus / Grafana / ELK (supervision) | Non implémenté | `journaux_securite` (MySQL) fait déjà office de journal d'audit applicatif ; une stack de supervision infrastructure viendrait en complément, pas en remplacement. |
 | Redis (cache, files de messages) | **Implémenté partiellement** : cache + liste noire JWT, pas de file de messages | File de messages (ex. notifications asynchrones) : `notificationService.js` est déjà le point d'entrée unique des notifications, migrable vers une file Redis (pub/sub ou liste) sans changer son interface publique. |
 
+## Modèle de domaine : cible et périmètre livré
+
+Le diagramme de classes du dossier (page 13) décrit un domaine métier
+plus large que celui réellement implémenté : au-delà de
+`Utilisateur`/`Patient`/`Médecin`/`Administrateur`/`RendezVous`, présents
+dans le code, il modélise `DossierMedical`, `Ordonnance`, `Paiement`
+(avec les énumérations `MethodePaiement` et `StatutPaiement`), `Lieu`
+(cabinet médical) et `PlageHoraire`. Ce tableau assume l'écart, entité
+par entité, pour la même raison que la section précédente : c'est la
+réponse à préparer si le jury pointe le diagramme.
+
+| Entité cible | Statut | Raison de la non-implémentation | Point d'extension prévu |
+|---|---|---|---|
+| `DossierMedical` | Non implémenté | Un dossier médical persistant, distinct du compte rendu par consultation, suppose son propre modèle de droits d'accès (consentement du patient, accès en lecture/écriture du médecin, traçabilité) — un périmètre à part entière, au-delà de ce qu'exige la démonstration d'une plateforme de prise de rendez-vous | `rendez_vous.notes_medecin` (texte libre, visible du seul médecin) en est aujourd'hui le substitut minimal. Une table `dossiers_medicaux` (clé étrangère `patient_id`, plusieurs entrées horodatées, éventuellement liées à un `rendez_vous_id`) et un service dédié, séparé d'`appointmentService`, seraient le point de départ. |
+| `Ordonnance` | Non implémenté | Une ordonnance structurée (médicaments, posologie, durée) suppose un référentiel de médicaments (codes DCI ou équivalent) : hors périmètre d'un projet de démonstration sans base médicamenteuse réelle | `notes_medecin` sert de substitut texte libre, comme pour `DossierMedical`. Cible réelle : une table `ordonnances` (`rendez_vous_id`) et `ordonnance_lignes` (médicament, posologie, durée) ; `backend/middleware/uploadMiddleware.js` existe déjà (photo de profil, voir plus bas) et gère déjà l'écriture sur disque + le service statique — la génération d'un PDF d'ordonnance en réutiliserait le même principe, pas la même instance (avatars et documents médicaux n'ont pas le même besoin de confidentialité). |
+| `Paiement` (+ `MethodePaiement`, `StatutPaiement`) | Non implémenté | Aucun flux de paiement dans cette version — assumé explicitement à l'écran (`AppointmentBooking.jsx` : "Aucun paiement ne sera effectué lors de la réservation"). Un vrai paiement en ligne implique l'intégration d'un prestataire (Stripe, PayPal...) et des enjeux de conformité (PCI-DSS) hors périmètre pédagogique | `medecins.prix_consultation` existe déjà en base et servirait de montant source. Cible : une table `paiements` (`rendez_vous_id`, `montant`, `methode` ENUM, `statut` ENUM, référence externe du prestataire) et un `paymentService.js` encapsulant le SDK du prestataire, sans toucher à `appointmentService`. |
+| `Lieu` (cabinet) | Non implémenté comme entité séparée | `medecins.adresse`/`ville`/`code_postal` sont des colonnes plates sur la fiche médecin : suffisant tant qu'un médecin n'exerce que dans un seul cabinet, ce qui couvre l'intégralité du parcours démontré | Extraire une table `cabinets` (adresse, ville, code postal, téléphone) et une relation `medecins.cabinet_id` (ou une table de liaison si plusieurs médecins partagent un secrétariat) permettrait de modéliser un médecin exerçant à plusieurs adresses, non démontré ici. |
+| `PlageHoraire` | Absorbée dans `disponibilites` | Choix technique déjà assumé et détaillé dans `database/CHANGELOG.md` : un modèle de disponibilité récurrente par jour de semaine (`disponibilites.jour_semaine`) remplace des créneaux datés un par un, plus simple à déclarer pour un médecin et à maintenir en base | Aucune extension nécessaire : `disponibilites` couvre le même besoin fonctionnel que `PlageHoraire` sous un nom et une structure différents. |
+
+**Fonctionnalité ajoutée au-delà du dossier** : la photo de profil (avatar
+patient/médecin) a été développée intégralement — upload multipart
+(`backend/middleware/uploadMiddleware.js`), stockage sur disque, affichage
+dans la recherche de médecins, la réservation et les tableaux de bord.
+Absente du dossier comme de l'Annexe B, documentée dans
+`database/CHANGELOG.md` (section 8) pour la même raison que
+`consentement_rgpd_le` : une fonctionnalité réelle ajoutée après la
+conception initiale, pas un écart de conformité à justifier.
+
 ## Pourquoi ce choix de périmètre
 
 Le référentiel évalue une compétence de conception d'architecture cible

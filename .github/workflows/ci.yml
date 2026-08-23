@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  lint:
+  lint-frontend:
     name: Lint (frontend)
     runs-on: ubuntu-latest
     steps:
@@ -20,19 +20,51 @@ jobs:
       - run: npm run lint
         working-directory: frontend
 
-  test:
+  lint-backend:
+    name: Lint (backend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+        working-directory: backend
+      - run: npm run lint
+        working-directory: backend
+
+  test-frontend:
+    name: Tests (frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm test
+        working-directory: frontend
+
+  test-backend:
     name: Tests (backend)
     runs-on: ubuntu-latest
-    # Service MySQL disponible pour les tests d'intégration. La suite
-    # actuelle est unitaire (mocks), mais la CI est prête à faire tourner
-    # de vrais tests d'intégration contre une base réelle dès qu'ils
-    # existent, avec le schéma français déjà chargé.
+    # Service MySQL pour les tests unitaires ET d'intégration (Supertest,
+    # backend/tests/integration/). La base est nommée mediconnect_test,
+    # comme en local (voir docs/PLAN_DE_TESTS.md) : backend/tests/integration/testDb.js
+    # refuse de lancer les tests d'intégration si DB_NAME ne vaut pas
+    # exactement "mediconnect_test", pour ne jamais risquer de toucher une
+    # base de développement par erreur de configuration.
     services:
       mysql:
         image: mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: test_password
-          MYSQL_DATABASE: mediconnect
+          MYSQL_DATABASE: mediconnect_test
         ports:
           - 3306:3306
         options: >-
@@ -43,7 +75,7 @@ jobs:
     env:
       DB_HOST: 127.0.0.1
       DB_PORT: 3306
-      DB_NAME: mediconnect
+      DB_NAME: mediconnect_test
       DB_USER: root
       DB_PASSWORD: test_password
       JWT_SECRET: ci-test-secret
@@ -55,12 +87,32 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: backend/package-lock.json
-      - name: Charger le schéma MySQL
-        run: mysql -h 127.0.0.1 -u root -ptest_password mediconnect < database/mediconnect.sql
+      - name: Charger le schéma et le jeu d'essai MySQL
+        # mediconnect.sql crée une base nommée "mediconnect" en dur (DROP/CREATE/USE) :
+        # le sed la renomme à la volée en mediconnect_test, sans toucher au fichier
+        # utilisé tel quel par le déploiement (voir docs/DEPLOIEMENT.md).
+        run: |
+          sed 's/\bmediconnect\b/mediconnect_test/g' database/mediconnect.sql | mysql -h 127.0.0.1 -u root -ptest_password
+          sed 's/\bmediconnect\b/mediconnect_test/g' database/seed.sql | mysql -h 127.0.0.1 -u root -ptest_password
+      - name: Créer backend/.env.test pour les tests d'intégration
+        run: |
+          echo "DB_HOST=127.0.0.1" >> backend/.env.test
+          echo "DB_PORT=3306" >> backend/.env.test
+          echo "DB_NAME=mediconnect_test" >> backend/.env.test
+          echo "DB_USER=root" >> backend/.env.test
+          echo "DB_PASSWORD=test_password" >> backend/.env.test
+          echo "JWT_SECRET=ci-test-secret" >> backend/.env.test
+          echo "JWT_EXPIRES_IN=1h" >> backend/.env.test
       - run: npm ci
         working-directory: backend
-      - run: npm test
+      - run: npm test -- --coverage
         working-directory: backend
+      - name: Publier le rapport de couverture
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/coverage
+          if-no-files-found: warn
 
   build:
     name: Build (frontend)
@@ -76,3 +128,9 @@ jobs:
         working-directory: frontend
       - run: npm run build
         working-directory: frontend
+      - name: Publier le build frontend (livrable)
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          if-no-files-found: error

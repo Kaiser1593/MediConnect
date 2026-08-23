@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 
+import Avatar from "../common/Avatar";
 import useAuth from "../../hooks/useAuth";
 
 const FOCUSABLE_SELECTOR =
@@ -30,10 +31,6 @@ function DashboardLayout({ role, title, subtitle, menu, children }) {
     isActive ? "sidebar-link active" : "sidebar-link";
 
   const fullName = user ? `${user.firstname} ${user.lastname}` : "";
-
-  const initials = user
-    ? `${user.firstname[0]}${user.lastname[0]}`.toUpperCase()
-    : "";
 
   const roleLabel = user ? ROLE_LABELS[user.role] || "" : "";
 
@@ -184,9 +181,12 @@ function DashboardLayout({ role, title, subtitle, menu, children }) {
               <span>{roleLabel}</span>
             </div>
 
-            <div className="dashboard-avatar" aria-hidden="true">
-              {initials}
-            </div>
+            <Avatar
+              avatarUrl={user?.avatar_url}
+              firstname={user?.firstname}
+              lastname={user?.lastname}
+              className="dashboard-avatar"
+            />
           </div>
         </header>
 

@@ -64,6 +64,10 @@ services:
       FRONTEND_URL: ${FRONTEND_URL}
     ports:
       - "5000:5000"
+    volumes:
+      # Persiste les avatars uploadés entre deux redémarrages du
+      # conteneur (sinon perdus à chaque "docker compose up --build").
+      - backend_uploads:/app/uploads
 
   frontend:
     build: ./frontend
@@ -75,3 +79,4 @@ services:
 
 volumes:
   mysql_data:
+  backend_uploads:

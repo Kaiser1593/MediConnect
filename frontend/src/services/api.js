@@ -44,4 +44,11 @@ api.interceptors.response.use(
   },
 );
 
+// Les avatars sont servis par le backend hors de /api (voir app.js),
+// contrairement au reste des appels de ce fichier : on ne peut pas se
+// contenter de préfixer par baseURL, il faut retirer son suffixe "/api".
+const API_ORIGIN = api.defaults.baseURL.replace(/\/api\/?$/, "");
+
+export const resolveUploadUrl = (path) => (path ? `${API_ORIGIN}${path}` : null);
+
 export default api;

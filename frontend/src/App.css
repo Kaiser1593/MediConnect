@@ -1046,6 +1046,9 @@
   background: linear-gradient(135deg, #2f6fe8, #2468df);
   border-radius: 50%;
   font-weight: 800;
+  /* S'applique à une balise <img> (photo de profil réelle) ; sans effet
+     sur le <div> d'initiales, qui n'a pas de contenu remplacé. */
+  object-fit: cover;
 }
 
 .small-avatar {
@@ -1948,4 +1951,51 @@
   .doctor-card-action a {
     width: auto;
   }
+}
+
+/* Masque visuellement un élément sans le retirer de l'arbre d'accessibilité :
+   utilisé pour le <input type="file"> natif de AvatarUploader, remplacé
+   visuellement par un <label> stylé en bouton. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.avatar-uploader {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.avatar-uploader-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.text-button {
+  padding: 0;
+  color: #b3261e;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.text-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.text-button:disabled {
+  color: #99a2b1;
+  cursor: not-allowed;
 }
