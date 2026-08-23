@@ -89,7 +89,11 @@ function AdminAppointments() {
             <p>{pagination.total} rendez-vous au total.</p>
           </div>
 
-          <select value={status} onChange={handleStatusChange}>
+          <select
+            value={status}
+            onChange={handleStatusChange}
+            aria-label="Filtrer par statut"
+          >
             <option value="">Tous les statuts</option>
             <option value="pending">En attente</option>
             <option value="confirmed">Confirmé</option>

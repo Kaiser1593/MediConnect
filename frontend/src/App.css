@@ -23,7 +23,7 @@
 
 .navbar-logo span,
 .footer span {
-  color: #3478f6;
+  color: #2f6fe8;
 }
 
 .navbar-links {
@@ -35,13 +35,13 @@
 }
 
 .navbar-links a:hover {
-  color: #3478f6;
+  color: #2f6fe8;
 }
 
 .navbar-button {
   padding: 11px 18px;
   color: white;
-  background: #3478f6;
+  background: #2f6fe8;
   border-radius: 10px;
 }
 
@@ -99,7 +99,7 @@
 
 .section-label {
   margin-bottom: 16px;
-  color: #3478f6;
+  color: #2f6fe8;
   font-size: 14px;
   font-weight: 800;
   letter-spacing: 1px;
@@ -138,7 +138,7 @@
 
 .primary-button {
   color: white;
-  background: #3478f6;
+  background: #2f6fe8;
   box-shadow: 0 12px 30px rgba(52, 120, 246, 0.25);
 }
 
@@ -181,7 +181,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #3478f6;
+  background: #2f6fe8;
 }
 
 .hero-statistics strong {
@@ -189,7 +189,7 @@
 }
 
 .hero-statistics span {
-  color: #6e798b;
+  color: #657084;
   font-size: 13px;
 }
 
@@ -240,7 +240,7 @@
   display: grid;
   place-items: center;
   color: white;
-  background: linear-gradient(135deg, #3478f6, #2468df);
+  background: linear-gradient(135deg, #2f6fe8, #2468df);
   border-radius: 50%;
   font-size: 19px;
   font-weight: 800;
@@ -274,7 +274,7 @@
   display: grid;
   place-items: center;
   color: white;
-  background: linear-gradient(135deg, #3478f6, #2468df);
+  background: linear-gradient(135deg, #2f6fe8, #2468df);
   border-radius: 50%;
   font-size: 16px;
   font-weight: 800;
@@ -498,7 +498,7 @@
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-  border-color: #3478f6;
+  border-color: #2f6fe8;
   box-shadow: 0 0 0 3px rgba(52, 120, 246, 0.12);
 }
 
@@ -524,12 +524,12 @@
 }
 
 .remember-me input {
-  accent-color: #3478f6;
+  accent-color: #2f6fe8;
 }
 
 .forgot-password {
   padding: 0;
-  color: #3478f6;
+  color: #2f6fe8;
   background: transparent;
   border: none;
   font-weight: 700;
@@ -539,7 +539,7 @@
   width: 100%;
   padding: 15px;
   color: #ffffff;
-  background: #3478f6;
+  background: #2f6fe8;
   border: none;
   border-radius: 10px;
   font-weight: 700;
@@ -562,7 +562,7 @@
 }
 
 .auth-switch a {
-  color: #3478f6;
+  color: #2f6fe8;
   font-weight: 700;
 }
 
@@ -635,7 +635,7 @@
 .terms-checkbox input {
   margin-top: 3px;
   flex-shrink: 0;
-  accent-color: #3478f6;
+  accent-color: #2f6fe8;
 }
 
 @media (max-width: 600px) {
@@ -695,7 +695,7 @@
 }
 
 .sidebar-logo span {
-  color: #3478f6;
+  color: #2f6fe8;
 }
 
 .sidebar-navigation {
@@ -707,7 +707,7 @@
 .sidebar-section-title {
   margin-bottom: 8px;
   padding-left: 13px;
-  color: #98a1b2;
+  color: #657084;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 1px;
@@ -733,7 +733,7 @@
 
 .sidebar-link:hover,
 .sidebar-link.active {
-  color: #3478f6;
+  color: #2f6fe8;
   background: #edf4ff;
 }
 
@@ -760,7 +760,7 @@
   width: 100%;
   padding: 10px;
   color: #ffffff;
-  background: #3478f6;
+  background: #2f6fe8;
   border: none;
   border-radius: 8px;
   font-size: 12px;
@@ -803,7 +803,7 @@
 
 .dashboard-label {
   margin-bottom: 6px;
-  color: #3478f6;
+  color: #2f6fe8;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 1px;
@@ -816,7 +816,7 @@
 }
 
 .dashboard-header > div > span {
-  color: #7a8595;
+  color: #657084;
   font-size: 14px;
 }
 
@@ -834,7 +834,7 @@
 }
 
 .dashboard-user span {
-  color: #7c8798;
+  color: #657084;
   font-size: 12px;
 }
 
@@ -844,7 +844,7 @@
   display: grid;
   place-items: center;
   color: #ffffff;
-  background: linear-gradient(135deg, #3478f6, #2468df);
+  background: linear-gradient(135deg, #2f6fe8, #2468df);
   border-radius: 50%;
   font-weight: 800;
 }
@@ -904,7 +904,7 @@
   place-items: center;
   flex-shrink: 0;
   color: #ffffff;
-  background: linear-gradient(135deg, #3478f6, #2468df);
+  background: linear-gradient(135deg, #2f6fe8, #2468df);
   border-radius: 50%;
   font-size: 20px;
   font-weight: 800;
@@ -916,7 +916,7 @@
 }
 
 .stat-card span {
-  color: #737e90;
+  color: #657084;
   font-size: 12px;
 }
 
@@ -926,7 +926,7 @@
 }
 
 .stat-card p {
-  color: #98a1af;
+  color: #657084;
   font-size: 11px;
 }
 
@@ -959,13 +959,13 @@
 }
 
 .panel-heading p {
-  color: #8590a1;
+  color: #657084;
   font-size: 12px;
 }
 
 .outline-button {
   padding: 9px 14px;
-  color: #3478f6;
+  color: #2f6fe8;
   background: #ffffff;
   border: 1px solid #cfd9e8;
   border-radius: 8px;
@@ -975,7 +975,7 @@
 
 .outline-button:hover:not(:disabled) {
   background: #edf4ff;
-  border-color: #3478f6;
+  border-color: #2f6fe8;
 }
 
 .outline-button:disabled {
@@ -1043,7 +1043,7 @@
   place-items: center;
   flex-shrink: 0;
   color: #ffffff;
-  background: linear-gradient(135deg, #3478f6, #2468df);
+  background: linear-gradient(135deg, #2f6fe8, #2468df);
   border-radius: 50%;
   font-weight: 800;
 }
@@ -1062,7 +1062,7 @@
 
 .appointment-doctor span,
 .appointment-date span {
-  color: #8993a3;
+  color: #657084;
   font-size: 11px;
 }
 
@@ -1078,7 +1078,7 @@
 }
 
 .review-rating-display {
-  color: #d69411;
+  color: #a16207;
   font-size: 14px;
   letter-spacing: 1px;
 }
@@ -1130,7 +1130,7 @@
 
 .star-picker button {
   padding: 0;
-  color: #d69411;
+  color: #a16207;
   background: none;
   border: none;
   font-size: 24px;
@@ -1153,13 +1153,13 @@
 }
 
 .status-badge.cancelled {
-  color: #8590a1;
+  color: #657084;
   background: #eef1f5;
 }
 
 .more-button {
   padding: 5px;
-  color: #8791a1;
+  color: #657084;
   background: transparent;
   border: none;
   border-radius: 6px;
@@ -1167,7 +1167,7 @@
 }
 
 .more-button:hover {
-  color: #3478f6;
+  color: #2f6fe8;
   background: #edf4ff;
 }
 
@@ -1189,7 +1189,7 @@
 }
 
 .next-doctor p {
-  color: #818c9d;
+  color: #657084;
   font-size: 12px;
 }
 
@@ -1206,7 +1206,7 @@
 }
 
 .next-details span {
-  color: #8993a3;
+  color: #657084;
   font-size: 12px;
 }
 
@@ -1221,7 +1221,7 @@
   padding: 13px;
   display: block;
   color: #ffffff;
-  background: #3478f6;
+  background: #2f6fe8;
   border: none;
   border-radius: 9px;
   font-weight: 700;
@@ -1259,9 +1259,9 @@
 }
 
 .secondary-dashboard-button {
-  color: #3478f6;
+  color: #2f6fe8;
   background: #ffffff;
-  border-color: #3478f6;
+  border-color: #2f6fe8;
 }
 
 .secondary-dashboard-button:hover {
@@ -1316,7 +1316,7 @@
   display: grid;
   place-items: center;
   color: #ffffff;
-  background: linear-gradient(135deg, #3478f6, #2468df);
+  background: linear-gradient(135deg, #2f6fe8, #2468df);
   border-radius: 50%;
   font-size: 18px;
   font-weight: 800;
@@ -1328,7 +1328,7 @@
 }
 
 .quick-actions small {
-  color: #8a94a4;
+  color: #657084;
   font-size: 11px;
 }
 
@@ -1342,13 +1342,88 @@
   }
 }
 
+.mobile-menu-toggle,
+.sidebar-close,
+.sidebar-backdrop {
+  display: none;
+}
+
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 48px;
+}
+
+.sidebar-top .sidebar-logo {
+  margin-bottom: 0;
+}
+
 @media (max-width: 900px) {
   .dashboard-layout {
     grid-template-columns: 1fr;
   }
 
+  /* La sidebar devient un panneau superposé (pas "display: none") : sans
+     ce comportement, toute la navigation patient/médecin/administrateur
+     serait inaccessible sur mobile et tablette. */
   .sidebar {
-    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 40;
+    width: 280px;
+    max-width: 85vw;
+    transform: translateX(-100%);
+    /* visibility (pas juste transform) : sans elle, les liens de la
+       sidebar fermée restent hors écran mais accessibles au clavier
+       (Tab), avant même le bouton qui ouvre le menu. */
+    visibility: hidden;
+    transition: transform 0.2s ease, visibility 0.2s;
+    box-shadow: 12px 0 30px rgba(15, 23, 42, 0.15);
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+    visibility: visible;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgba(15, 23, 42, 0.4);
+  }
+
+  .mobile-menu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin-right: 12px;
+    font-size: 20px;
+    background: #ffffff;
+    border: 1px solid #e4e9f1;
+    border-radius: 9px;
+    flex-shrink: 0;
+  }
+
+  .sidebar-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+    background: transparent;
+    border: 1px solid #e4e9f1;
+    border-radius: 8px;
+  }
+
+  .dashboard-header {
+    flex-wrap: nowrap;
   }
 
   .dashboard-grid {
@@ -1401,14 +1476,14 @@
 .booking-section textarea:focus,
 .results-heading select:focus,
 .admin-chart select:focus {
-  border-color: #3478f6;
+  border-color: #2f6fe8;
   box-shadow: 0 0 0 3px rgba(52, 120, 246, 0.12);
 }
 
 .search-fields button {
   padding: 14px 24px;
   color: #ffffff;
-  background: #3478f6;
+  background: #2f6fe8;
   border: none;
   border-radius: 9px;
   font-weight: 700;
@@ -1432,7 +1507,7 @@
 }
 
 .results-heading p {
-  color: #8490a1;
+  color: #657084;
   font-size: 13px;
 }
 
@@ -1479,7 +1554,7 @@
 }
 
 .doctor-card-profile span {
-  color: #d08a13;
+  color: #a16207;
   font-size: 12px;
 }
 
@@ -1502,7 +1577,7 @@
 }
 
 .doctor-card-action span {
-  color: #8792a3;
+  color: #657084;
   font-size: 11px;
 }
 
@@ -1515,7 +1590,7 @@
   width: 100%;
   padding: 12px;
   color: #ffffff;
-  background: #3478f6;
+  background: #2f6fe8;
   border-radius: 9px;
   text-align: center;
   font-size: 12px;
@@ -1558,7 +1633,7 @@
 }
 
 .booking-doctor span {
-  color: #d08a13;
+  color: #a16207;
   font-size: 12px;
 }
 
@@ -1589,15 +1664,15 @@
 
 .date-cards button:hover:not(.selected),
 .time-grid button:hover:not(.selected) {
-  border-color: #3478f6;
+  border-color: #2f6fe8;
   transform: translateY(-2px);
 }
 
 .date-cards button.selected,
 .time-grid button.selected {
   color: #ffffff;
-  background: #3478f6;
-  border-color: #3478f6;
+  background: #2f6fe8;
+  border-color: #2f6fe8;
 }
 
 .date-cards span,
@@ -1647,7 +1722,7 @@
 }
 
 .booking-summary span {
-  color: #8490a1;
+  color: #657084;
   font-size: 12px;
 }
 
@@ -1658,7 +1733,7 @@
 
 .booking-summary > p {
   margin-top: 14px;
-  color: #8b95a5;
+  color: #657084;
   text-align: center;
   font-size: 10px;
 }
@@ -1686,7 +1761,7 @@
 }
 
 .appointment-time-block span {
-  color: #8a94a4;
+  color: #657084;
   font-size: 10px;
 }
 
@@ -1706,7 +1781,7 @@
 }
 
 .availability-list span {
-  color: #7b8697;
+  color: #657084;
   font-size: 12px;
 }
 
@@ -1735,7 +1810,7 @@
   width: 48px;
   min-height: 30px;
   position: relative;
-  background: linear-gradient(#3478f6, #8ab3ff);
+  background: linear-gradient(#2f6fe8, #8ab3ff);
   border-radius: 8px 8px 0 0;
 }
 
@@ -1743,7 +1818,7 @@
   position: absolute;
   bottom: -27px;
   left: 50%;
-  color: #7e899a;
+  color: #657084;
   font-size: 10px;
   transform: translateX(-50%);
 }
@@ -1767,7 +1842,7 @@
   place-items: center;
   flex-shrink: 0;
   color: #ffffff;
-  background: linear-gradient(135deg, #3478f6, #2468df);
+  background: linear-gradient(135deg, #2f6fe8, #2468df);
   border-radius: 50%;
 }
 
@@ -1779,7 +1854,7 @@
 }
 
 .activity-list small {
-  color: #8b95a5;
+  color: #657084;
 }
 
 .admin-users-panel {
@@ -1796,7 +1871,7 @@
 }
 
 .admin-table-header {
-  color: #7e899a;
+  color: #657084;
   background: #f5f7fb;
   border-radius: 9px;
   font-size: 11px;

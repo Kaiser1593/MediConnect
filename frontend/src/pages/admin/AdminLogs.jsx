@@ -104,7 +104,11 @@ function AdminLogs() {
           </div>
 
           <div className="form-group">
-            <select value={eventType} onChange={handleFilterChange}>
+            <select
+              value={eventType}
+              onChange={handleFilterChange}
+              aria-label="Filtrer par type d'événement"
+            >
               <option value="">Tous les types</option>
               {Object.entries(EVENT_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>

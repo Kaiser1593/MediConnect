@@ -279,14 +279,21 @@ function AppointmentBooking() {
             <div className="booking-section">
               <h3>3. Motif de consultation</h3>
 
-              <select value={reasonType} onChange={(event) => setReasonType(event.target.value)}>
+              <label htmlFor="booking-reason-type">Type de consultation</label>
+              <select
+                id="booking-reason-type"
+                value={reasonType}
+                onChange={(event) => setReasonType(event.target.value)}
+              >
                 <option value="consultation">Consultation générale</option>
                 <option value="follow-up">Consultation de suivi</option>
                 <option value="certificate">Certificat médical</option>
                 <option value="urgent">Douleur ou urgence relative</option>
               </select>
 
+              <label htmlFor="booking-note">Précisions (facultatif)</label>
               <textarea
+                id="booking-note"
                 placeholder="Vous pouvez apporter des précisions au médecin..."
                 rows="4"
                 value={note}

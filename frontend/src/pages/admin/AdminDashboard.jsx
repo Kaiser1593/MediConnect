@@ -184,7 +184,10 @@ function AdminDashboard() {
                   <p>Nombre de nouveaux utilisateurs sur six mois.</p>
                 </div>
 
-                <select defaultValue="six-months">
+                <select
+                  defaultValue="six-months"
+                  aria-label="Période affichée"
+                >
                   <option value="six-months">6 derniers mois</option>
                 </select>
               </div>

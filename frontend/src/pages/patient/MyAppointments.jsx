@@ -62,6 +62,7 @@ function ReviewForm({ rating, onRatingChange, comment, onCommentChange, onSubmit
 
       <div className="form-group">
         <textarea
+          aria-label="Votre avis sur cette consultation"
           placeholder="Votre avis sur cette consultation (facultatif)"
           rows="3"
           value={comment}
