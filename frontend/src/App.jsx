@@ -25,7 +25,7 @@ const DoctorProfile = lazy(() => import("./pages/doctor/DoctorProfile"));
 const DoctorPatients = lazy(() => import("./pages/doctor/DoctorPatients"));
 const DoctorAvailabilities = lazy(() => import("./pages/doctor/DoctorAvailabilities"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
-const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminPatients = lazy(() => import("./pages/admin/AdminPatients"));
 const AdminDoctors = lazy(() => import("./pages/admin/AdminDoctors"));
 const AdminAppointments = lazy(() => import("./pages/admin/AdminAppointments"));
 const AdminStatistics = lazy(() => import("./pages/admin/AdminStatistics"));
@@ -198,10 +198,10 @@ function App() {
         />
 
         <Route
-          path="/admin/utilisateurs"
+          path="/admin/patients"
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
-              <AdminUsers />
+              <AdminPatients />
             </ProtectedRoute>
           }
         />

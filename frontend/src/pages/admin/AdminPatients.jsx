@@ -1,24 +1,17 @@
 import { useEffect, useState } from "react";
 
 import DashboardLayout from "../../components/layout/DashboardLayout";
-import useAuth from "../../hooks/useAuth";
 import api from "../../services/api";
 
 const menu = [
   { label: "Tableau de bord", path: "/admin/dashboard", icon: "⌂" },
-  { label: "Utilisateurs", path: "/admin/utilisateurs", icon: "○" },
+  { label: "Patients", path: "/admin/patients", icon: "○" },
   { label: "Médecins", path: "/admin/medecins", icon: "＋" },
   { label: "Rendez-vous", path: "/admin/rendez-vous", icon: "□" },
   { label: "Statistiques", path: "/admin/statistiques", icon: "▥" },
   { label: "Journaux", path: "/admin/journaux", icon: "≡" },
   { label: "Paramètres", path: "/admin/parametres", icon: "⚙" },
 ];
-
-const ROLE_LABELS = {
-  patient: "Patient",
-  doctor: "Médecin",
-  admin: "Administrateur",
-};
 
 const formatDate = (isoDate) =>
   new Date(isoDate).toLocaleDateString("fr-FR", {
@@ -27,48 +20,47 @@ const formatDate = (isoDate) =>
     year: "numeric",
   });
 
-function AdminUsers() {
-  const { user } = useAuth();
-
-  const [users, setUsers] = useState([]);
+function AdminPatients() {
+  const [patients, setPatients] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
-    const loadUsers = async () => {
+    const loadPatients = async () => {
       setIsLoading(true);
       setError("");
 
       try {
         const response = await api.get("/admin/users", {
-          params: { page: pagination.page, limit: 10 },
+          params: { page: pagination.page, limit: 10, role: "patient" },
         });
-        setUsers(response.data.users);
+        setPatients(response.data.users);
         setPagination(response.data.pagination);
       } catch {
-        setError("Impossible de charger la liste des utilisateurs.");
+        setError("Impossible de charger la liste des patients.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadUsers();
+    loadPatients();
   }, [pagination.page]);
 
-  const handleToggleStatus = async (targetUser) => {
-    setUpdatingId(targetUser.id);
+  const handleToggleStatus = async (targetPatient) => {
+    setUpdatingId(targetPatient.id);
     setError("");
 
     try {
-      await api.patch(`/admin/users/${targetUser.id}/status`, {
-        is_active: !targetUser.is_active,
+      await api.patch(`/admin/users/${targetPatient.id}/status`, {
+        is_active: !targetPatient.is_active,
       });
 
-      setUsers((previous) =>
+      setPatients((previous) =>
         previous.map((item) =>
-          item.id === targetUser.id
+          item.id === targetPatient.id
             ? { ...item, is_active: item.is_active ? 0 : 1 }
             : item,
         ),
@@ -83,11 +75,36 @@ function AdminUsers() {
     }
   };
 
+  const handleDelete = async (targetPatient) => {
+    if (
+      !window.confirm(
+        `Supprimer définitivement le compte de ${targetPatient.firstname} ${targetPatient.lastname} ? Ses données personnelles seront anonymisées. Cette action est irréversible.`,
+      )
+    ) {
+      return;
+    }
+
+    setDeletingId(targetPatient.id);
+    setError("");
+
+    try {
+      await api.delete(`/admin/users/${targetPatient.id}`);
+      setPatients((previous) => previous.filter((item) => item.id !== targetPatient.id));
+      setPagination((previous) => ({ ...previous, total: previous.total - 1 }));
+    } catch (submitError) {
+      setError(
+        submitError.response?.data?.message || "La suppression a échoué.",
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <DashboardLayout
       role="Administration"
-      title="Utilisateurs"
-      subtitle="Gérez les comptes inscrits sur MediConnect."
+      title="Patients"
+      subtitle="Gérez les comptes patients inscrits sur MediConnect."
       menu={menu}
     >
       {error && (
@@ -99,8 +116,8 @@ function AdminUsers() {
       <section className="dashboard-panel admin-users-panel">
         <div className="panel-heading">
           <div>
-            <h2>Tous les utilisateurs</h2>
-            <p>{pagination.total} compte(s) au total.</p>
+            <h2>Tous les patients</h2>
+            <p>{pagination.total} patient(s) au total.</p>
           </div>
         </div>
 
@@ -109,36 +126,28 @@ function AdminUsers() {
         ) : (
           <>
             <div className="admin-table">
-              <div className="admin-table-header">
-                <span>Utilisateur</span>
+              <div className="admin-table-header admin-table-header-patients">
+                <span>Patient</span>
                 <span>Adresse e-mail</span>
-                <span>Rôle</span>
                 <span>Inscription</span>
                 <span>Statut</span>
               </div>
 
-              {users.map((item) => (
-                <div className="admin-table-row" key={item.id}>
+              {patients.map((item) => (
+                <div className="admin-table-row admin-table-row-patients" key={item.id}>
                   <strong>
                     {item.firstname} {item.lastname}
                   </strong>
                   <span>{item.email}</span>
-                  <span>{ROLE_LABELS[item.role] || item.role}</span>
                   <span>{formatDate(item.created_at)}</span>
 
-                  {item.id === user.id ? (
-                    <span
-                      className={`status-badge ${item.is_active ? "confirmed" : "pending"}`}
-                    >
-                      {item.is_active ? "Actif" : "Inactif"}
-                    </span>
-                  ) : (
+                  <div className="admin-row-actions">
                     <button
                       type="button"
                       className={
                         item.is_active ? "cancel-button" : "outline-button"
                       }
-                      disabled={updatingId === item.id}
+                      disabled={updatingId === item.id || deletingId === item.id}
                       onClick={() => handleToggleStatus(item)}
                     >
                       {updatingId === item.id
@@ -147,7 +156,16 @@ function AdminUsers() {
                           ? "Désactiver"
                           : "Activer"}
                     </button>
-                  )}
+
+                    <button
+                      type="button"
+                      className="cancel-button"
+                      disabled={updatingId === item.id || deletingId === item.id}
+                      onClick={() => handleDelete(item)}
+                    >
+                      {deletingId === item.id ? "…" : "Supprimer"}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -188,4 +206,4 @@ function AdminUsers() {
   );
 }
 
-export default AdminUsers;
+export default AdminPatients;

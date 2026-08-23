@@ -5,7 +5,7 @@ import api from "../../services/api";
 
 const menu = [
   { label: "Tableau de bord", path: "/admin/dashboard", icon: "⌂" },
-  { label: "Utilisateurs", path: "/admin/utilisateurs", icon: "○" },
+  { label: "Patients", path: "/admin/patients", icon: "○" },
   { label: "Médecins", path: "/admin/medecins", icon: "＋" },
   { label: "Rendez-vous", path: "/admin/rendez-vous", icon: "□" },
   { label: "Statistiques", path: "/admin/statistiques", icon: "▥" },
@@ -19,6 +19,8 @@ function AdminDoctors() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [approvingId, setApprovingId] = useState(null);
+  const [rejectingId, setRejectingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     const loadDoctors = async () => {
@@ -58,6 +60,59 @@ function AdminDoctors() {
       );
     } finally {
       setApprovingId(null);
+    }
+  };
+
+  const handleReject = async (doctorId) => {
+    if (
+      !window.confirm(
+        "Révoquer la validation de ce médecin ? Il disparaîtra immédiatement des résultats de recherche des patients.",
+      )
+    ) {
+      return;
+    }
+
+    setRejectingId(doctorId);
+    setError("");
+
+    try {
+      await api.patch(`/admin/doctors/${doctorId}/reject`);
+      setDoctors((previous) =>
+        previous.map((doctor) =>
+          doctor.id === doctorId ? { ...doctor, is_approved: 0 } : doctor,
+        ),
+      );
+    } catch (submitError) {
+      setError(
+        submitError.response?.data?.message || "La révocation a échoué.",
+      );
+    } finally {
+      setRejectingId(null);
+    }
+  };
+
+  const handleDelete = async (doctor) => {
+    if (
+      !window.confirm(
+        `Supprimer définitivement le compte du Dr ${doctor.firstname} ${doctor.lastname} ? Ses données personnelles seront anonymisées et il disparaîtra de la recherche. Cette action est irréversible.`,
+      )
+    ) {
+      return;
+    }
+
+    setDeletingId(doctor.id);
+    setError("");
+
+    try {
+      await api.delete(`/admin/users/${doctor.user_id}`);
+      setDoctors((previous) => previous.filter((item) => item.id !== doctor.id));
+      setPagination((previous) => ({ ...previous, total: previous.total - 1 }));
+    } catch (submitError) {
+      setError(
+        submitError.response?.data?.message || "La suppression a échoué.",
+      );
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -104,18 +159,36 @@ function AdminDoctors() {
                   <span>{doctor.specialty || "—"}</span>
                   <span>{doctor.city || "—"}</span>
 
-                  {doctor.is_approved ? (
-                    <span className="status-badge confirmed">Validé</span>
-                  ) : (
+                  <div className="admin-row-actions">
+                    {doctor.is_approved ? (
+                      <button
+                        type="button"
+                        className="cancel-button"
+                        disabled={rejectingId === doctor.id || deletingId === doctor.id}
+                        onClick={() => handleReject(doctor.id)}
+                      >
+                        {rejectingId === doctor.id ? "Révocation…" : "Révoquer"}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="outline-button"
+                        disabled={approvingId === doctor.id || deletingId === doctor.id}
+                        onClick={() => handleApprove(doctor.id)}
+                      >
+                        {approvingId === doctor.id ? "Validation…" : "Valider"}
+                      </button>
+                    )}
+
                     <button
                       type="button"
-                      className="outline-button"
-                      disabled={approvingId === doctor.id}
-                      onClick={() => handleApprove(doctor.id)}
+                      className="cancel-button"
+                      disabled={approvingId === doctor.id || rejectingId === doctor.id || deletingId === doctor.id}
+                      onClick={() => handleDelete(doctor)}
                     >
-                      {approvingId === doctor.id ? "Validation…" : "Valider"}
+                      {deletingId === doctor.id ? "…" : "Supprimer"}
                     </button>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>

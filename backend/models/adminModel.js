@@ -10,6 +10,7 @@
 
 const { pool } = require("../config/database");
 const {
+  ROLE_TO_DB,
   ROLE_FROM_DB,
   STATUS_TO_DB,
   STATUS_FROM_DB,
@@ -44,18 +45,23 @@ const getStats = async () => {
   };
 };
 
-const getUsers = async ({ limit, offset }) => {
+const getUsers = async ({ limit, offset, role }) => {
+  const whereClause = role ? "WHERE role = ?" : "";
+  const params = role ? [ROLE_TO_DB[role]] : [];
+
   const [rows] = await pool.query(
     `SELECT id, prenom AS firstname, nom AS lastname, email, role,
             statut_compte, date_creation AS created_at
      FROM utilisateurs
+     ${whereClause}
      ORDER BY date_creation DESC
      LIMIT ? OFFSET ?`,
-    [limit, offset],
+    [...params, limit, offset],
   );
 
   const [[{ total }]] = await pool.query(
-    "SELECT COUNT(*) AS total FROM utilisateurs",
+    `SELECT COUNT(*) AS total FROM utilisateurs ${whereClause}`,
+    params,
   );
 
   return {
@@ -173,6 +179,52 @@ const approveDoctor = async (doctorId) => {
   return result.affectedRows > 0;
 };
 
+// Retire la validation d'un médecin déjà validé : il redevient invisible
+// dans la recherche publique jusqu'à une nouvelle validation. Symétrique
+// d'approveDoctor, pas une suppression de compte.
+const revokeDoctorApproval = async (doctorId) => {
+  const [result] = await pool.query(
+    "UPDATE medecins SET est_valide = FALSE WHERE id = ?",
+    [doctorId],
+  );
+
+  return result.affectedRows > 0;
+};
+
+// Nombre de nouvelles inscriptions par mois, sur les "months" derniers
+// mois glissants. Les mois sans inscription ne remontent aucune ligne
+// (GROUP BY sur des lignes existantes) : complétés à zéro côté service,
+// pour que le graphique n'affiche jamais un mois manquant comme absent.
+const getRegistrationsByMonth = async (months) => {
+  const [rows] = await pool.query(
+    `SELECT DATE_FORMAT(date_creation, '%Y-%m') AS month, COUNT(*) AS total
+     FROM utilisateurs
+     WHERE date_creation >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL ? MONTH)
+     GROUP BY month
+     ORDER BY month`,
+    [months - 1],
+  );
+
+  return rows;
+};
+
+// Même principe que getRegistrationsByMonth, à la semaine près (lundi au
+// dimanche) : utilisé pour la vue "dernier mois", où un seul barreau
+// mensuel ne montrerait rien d'une évolution.
+const getRegistrationsByWeek = async (days) => {
+  const [rows] = await pool.query(
+    `SELECT DATE_FORMAT(DATE_SUB(date_creation, INTERVAL WEEKDAY(date_creation) DAY), '%Y-%m-%d') AS week_start,
+            COUNT(*) AS total
+     FROM utilisateurs
+     WHERE date_creation >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+     GROUP BY week_start
+     ORDER BY week_start`,
+    [days],
+  );
+
+  return rows;
+};
+
 const setUserActiveStatus = async (userId, isActive) => {
   const [result] = await pool.query(
     "UPDATE utilisateurs SET statut_compte = ? WHERE id = ?",
@@ -227,6 +279,9 @@ module.exports = {
   getAppointmentsByStatus,
   getDoctorsBySpecialty,
   approveDoctor,
+  revokeDoctorApproval,
+  getRegistrationsByMonth,
+  getRegistrationsByWeek,
   setUserActiveStatus,
   getSecurityLogs,
 };

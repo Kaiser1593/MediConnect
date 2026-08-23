@@ -5,7 +5,7 @@ import api from "../../services/api";
 
 const menu = [
   { label: "Tableau de bord", path: "/admin/dashboard", icon: "⌂" },
-  { label: "Utilisateurs", path: "/admin/utilisateurs", icon: "○" },
+  { label: "Patients", path: "/admin/patients", icon: "○" },
   { label: "Médecins", path: "/admin/medecins", icon: "＋" },
   { label: "Rendez-vous", path: "/admin/rendez-vous", icon: "□" },
   { label: "Statistiques", path: "/admin/statistiques", icon: "▥" },
@@ -22,7 +22,9 @@ const EVENT_LABELS = {
   PASSWORD_RESET: "Mot de passe réinitialisé",
   ACCESS_DENIED: "Accès refusé",
   DOCTOR_APPROVED: "Médecin validé",
+  DOCTOR_REVOKED: "Validation médecin révoquée",
   USER_STATUS_CHANGED: "Statut modifié",
+  ACCOUNT_ANONYMIZED: "Compte supprimé",
 };
 
 const EVENT_BADGE_CLASSES = {
@@ -34,7 +36,9 @@ const EVENT_BADGE_CLASSES = {
   PASSWORD_RESET: "pending",
   ACCESS_DENIED: "cancelled",
   DOCTOR_APPROVED: "confirmed",
+  DOCTOR_REVOKED: "cancelled",
   USER_STATUS_CHANGED: "pending",
+  ACCOUNT_ANONYMIZED: "cancelled",
 };
 
 const formatDateTime = (isoDate) =>

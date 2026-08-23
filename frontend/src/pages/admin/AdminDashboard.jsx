@@ -19,7 +19,9 @@ const ACTIVITY_ICONS = {
   PASSWORD_RESET: "⚙",
   ACCESS_DENIED: "!",
   DOCTOR_APPROVED: "✓",
+  DOCTOR_REVOKED: "!",
   USER_STATUS_CHANGED: "○",
+  ACCOUNT_ANONYMIZED: "!",
 };
 
 const ACTIVITY_TITLES = {
@@ -31,7 +33,9 @@ const ACTIVITY_TITLES = {
   PASSWORD_RESET: "Mot de passe réinitialisé",
   ACCESS_DENIED: "Accès refusé",
   DOCTOR_APPROVED: "Médecin validé",
+  DOCTOR_REVOKED: "Validation médecin révoquée",
   USER_STATUS_CHANGED: "Statut modifié",
+  ACCOUNT_ANONYMIZED: "Compte supprimé",
 };
 
 const formatDate = (isoDate) =>
@@ -61,7 +65,7 @@ const formatRelativeTime = (isoDate) => {
 function AdminDashboard() {
   const menu = [
     { label: "Tableau de bord", path: "/admin/dashboard", icon: "⌂" },
-    { label: "Utilisateurs", path: "/admin/utilisateurs", icon: "○" },
+    { label: "Patients", path: "/admin/patients", icon: "○" },
     { label: "Médecins", path: "/admin/medecins", icon: "＋" },
     { label: "Rendez-vous", path: "/admin/rendez-vous", icon: "□" },
     { label: "Statistiques", path: "/admin/statistiques", icon: "▥" },
@@ -80,6 +84,12 @@ function AdminDashboard() {
   // reloadIndex change relance l'effet : c'est ainsi que handleApprove
   // déclenche un nouveau chargement après avoir validé un médecin.
   const [reloadIndex, setReloadIndex] = useState(0);
+
+  // Chargement séparé du reste du tableau de bord : changer de période
+  // ne doit pas faire clignoter toute la page, seulement le graphique.
+  const [registrationMonths, setRegistrationMonths] = useState(6);
+  const [registrationSeries, setRegistrationSeries] = useState([]);
+  const [isChartLoading, setIsChartLoading] = useState(true);
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -108,6 +118,25 @@ function AdminDashboard() {
 
     loadDashboard();
   }, [reloadIndex]);
+
+  useEffect(() => {
+    const loadRegistrationStats = async () => {
+      setIsChartLoading(true);
+
+      try {
+        const response = await api.get("/admin/stats/registrations", {
+          params: { months: registrationMonths },
+        });
+        setRegistrationSeries(response.data.series);
+      } catch {
+        setRegistrationSeries([]);
+      } finally {
+        setIsChartLoading(false);
+      }
+    };
+
+    loadRegistrationStats();
+  }, [registrationMonths]);
 
   const handleApprove = async (doctorId) => {
     try {
@@ -181,37 +210,41 @@ function AdminDashboard() {
               <div className="panel-heading">
                 <div>
                   <h2>Évolution des inscriptions</h2>
-                  <p>Nombre de nouveaux utilisateurs sur six mois.</p>
+                  <p>Nombre de nouveaux utilisateurs, chiffres réels.</p>
                 </div>
 
                 <select
-                  defaultValue="six-months"
+                  value={registrationMonths}
+                  onChange={(event) => setRegistrationMonths(Number(event.target.value))}
                   aria-label="Période affichée"
                 >
-                  <option value="six-months">6 derniers mois</option>
+                  <option value={1}>Dernier mois</option>
+                  <option value={3}>3 derniers mois</option>
+                  <option value={6}>6 derniers mois</option>
                 </select>
               </div>
 
-              <div className="fake-chart">
-                <div style={{ height: "38%" }}>
-                  <span>Mars</span>
+              {isChartLoading ? (
+                <p className="route-loading">Chargement…</p>
+              ) : registrationSeries.every((entry) => entry.count === 0) ? (
+                <p>Aucune inscription sur cette période.</p>
+              ) : (
+                <div className="registrations-chart">
+                  {(() => {
+                    const maxCount = Math.max(1, ...registrationSeries.map((entry) => entry.count));
+
+                    return registrationSeries.map((entry, index) => (
+                      <div
+                        key={`${entry.label}-${index}`}
+                        style={{ height: `${Math.max((entry.count / maxCount) * 100, 4)}%` }}
+                      >
+                        <strong>{entry.count}</strong>
+                        <span>{entry.label}</span>
+                      </div>
+                    ));
+                  })()}
                 </div>
-                <div style={{ height: "52%" }}>
-                  <span>Avril</span>
-                </div>
-                <div style={{ height: "47%" }}>
-                  <span>Mai</span>
-                </div>
-                <div style={{ height: "68%" }}>
-                  <span>Juin</span>
-                </div>
-                <div style={{ height: "82%" }}>
-                  <span>Juillet</span>
-                </div>
-                <div style={{ height: "100%" }}>
-                  <span>Août</span>
-                </div>
-              </div>
+              )}
             </article>
 
             <aside className="dashboard-panel activity-panel">
@@ -296,12 +329,8 @@ function AdminDashboard() {
             <div className="panel-heading">
               <div>
                 <h2>Derniers utilisateurs inscrits</h2>
-                <p>Comptes récemment créés sur MediConnect.</p>
+                <p>Comptes récemment créés sur MediConnect, tous rôles confondus.</p>
               </div>
-
-              <Link to="/admin/utilisateurs" className="outline-button">
-                Gérer les utilisateurs
-              </Link>
             </div>
 
             <div className="admin-table">

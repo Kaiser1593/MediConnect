@@ -105,3 +105,28 @@ Le token JWT en cours est immédiatement révoqué (liste noire Redis, voir
 `docs/ECOCONCEPTION.md`), et l'événement est journalisé
 (`journaux_securite`, type `COMPTE_ANONYMISE`) sans jamais inclure de
 donnée personnelle dans le message de journal.
+
+### Purge par un administrateur — distincte de l'effacement RGPD
+
+`DELETE /api/admin/users/:id` (réservé aux administrateurs, boutons
+"Supprimer" des pages Patients et Médecins) réalise une **suppression
+réelle**, pas une anonymisation : la ligne `utilisateurs` est
+définitivement effacée, et par les contraintes `ON DELETE CASCADE`, tout
+ce qui en dépend (fiche patient/médecin, rendez-vous, avis) l'est aussi —
+y compris côté de l'autre partie (un médecin supprimé par un
+administrateur emporte avec lui les rendez-vous que des patients avaient
+pris chez lui).
+
+**Ce n'est volontairement pas la même opération que l'auto-suppression
+ci-dessus.** L'auto-suppression est l'exercice, par une personne, de son
+propre droit à l'effacement RGPD : la loi n'exige pas la disparition de
+tout enregistrement, seulement celle des données personnelles
+identifiantes, d'où l'anonymisation qui préserve l'historique de l'autre
+partie. La purge administrative est une décision opérationnelle de
+l'administrateur (nettoyage de comptes de test, compte créé par erreur,
+etc.) : un administrateur peut légitimement vouloir qu'un compte
+disparaisse réellement, y compris de la base de données, ce que
+l'anonymisation ne permettait pas. Un administrateur ne peut pas
+utiliser cette route sur son propre compte ni sur celui d'un autre
+administrateur (les comptes admin ne se gèrent que par
+`backend/scripts/createAdmin.js`).

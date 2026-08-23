@@ -41,6 +41,7 @@ const EVENT_TYPE_TO_DB = {
   PASSWORD_RESET: "MOT_DE_PASSE_REINITIALISE",
   ACCESS_DENIED: "ACCES_REFUSE",
   DOCTOR_APPROVED: "MEDECIN_VALIDE",
+  DOCTOR_REVOKED: "MEDECIN_DEVALIDE",
   USER_STATUS_CHANGED: "SUSPENSION_COMPTE",
   // Prévu par le dossier (Phase 3) mais sans point d'appel : aucune
   // fonctionnalité de changement de rôle par un administrateur n'existe

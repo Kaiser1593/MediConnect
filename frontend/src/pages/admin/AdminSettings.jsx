@@ -5,7 +5,7 @@ import api from "../../services/api";
 
 const menu = [
   { label: "Tableau de bord", path: "/admin/dashboard", icon: "⌂" },
-  { label: "Utilisateurs", path: "/admin/utilisateurs", icon: "○" },
+  { label: "Patients", path: "/admin/patients", icon: "○" },
   { label: "Médecins", path: "/admin/medecins", icon: "＋" },
   { label: "Rendez-vous", path: "/admin/rendez-vous", icon: "□" },
   { label: "Statistiques", path: "/admin/statistiques", icon: "▥" },

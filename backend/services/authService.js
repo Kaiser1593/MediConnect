@@ -288,7 +288,14 @@ const exportPersonalData = async ({ userId, role }) => {
 // médical reste cohérent pour l'autre partie (médecin ou patient) tout en
 // retirant les données personnelles identifiantes. Voir CHANGELOG pour la
 // justification complète.
-const deleteAccount = async ({ userId, role, token, ipAddress, userAgent }) => {
+const deleteAccount = async ({
+  userId,
+  role,
+  token,
+  ipAddress,
+  userAgent,
+  initiatedBy = "self",
+}) => {
   const anonymizedEmail = `compte-supprime-${userId}@anonymise.mediconnect.local`;
   const passwordHash = await hashPassword(crypto.randomBytes(32).toString("hex"));
 
@@ -325,14 +332,23 @@ const deleteAccount = async ({ userId, role, token, ipAddress, userAgent }) => {
     await doctorModel.revokeValidation(userId);
   }
 
-  const decoded = jwt.decode(token);
-  const ttlSeconds = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 0;
-  await cacheService.blacklistToken(token, ttlSeconds);
+  // Un administrateur qui supprime le compte d'un tiers n'a pas le token
+  // de ce tiers à révoquer : il reste valide jusqu'à son expiration
+  // naturelle (comme pour une simple suspension de compte, déjà le cas
+  // ailleurs dans l'application), sans jamais bloquer l'appel courant.
+  if (token) {
+    const decoded = jwt.decode(token);
+    const ttlSeconds = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 0;
+    await cacheService.blacklistToken(token, ttlSeconds);
+  }
 
   logSecurityEvent({
     userId,
     eventType: "ACCOUNT_ANONYMIZED",
-    message: "Compte anonymisé à la demande de l'utilisateur (droit à l'effacement RGPD).",
+    message:
+      initiatedBy === "admin"
+        ? "Compte anonymisé par un administrateur."
+        : "Compte anonymisé à la demande de l'utilisateur (droit à l'effacement RGPD).",
     ipAddress,
     userAgent,
   });

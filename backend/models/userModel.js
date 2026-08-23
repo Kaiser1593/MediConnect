@@ -183,6 +183,23 @@ const anonymizeAccount = async (id, { anonymizedEmail, passwordHash }) => {
   );
 };
 
+// Suppression réelle d'un compte par un administrateur (distincte du
+// droit à l'effacement RGPD ci-dessus, réservé à l'utilisateur lui-même
+// sur son propre compte). Une purge administrative supprime la ligne
+// utilisateurs et, par les contraintes ON DELETE CASCADE de la fiche
+// patient/médecin associée, tous ses rendez-vous et avis — y compris
+// ceux vus par l'autre partie (médecin ou patient). Choix assumé et
+// documenté dans docs/RGPD.md : contrairement à l'auto-suppression, ce
+// n'est pas une demande d'exercice d'un droit RGPD, mais une purge
+// opérationnelle décidée par un administrateur.
+const hardDelete = async (id) => {
+  const [result] = await pool.query("DELETE FROM utilisateurs WHERE id = ?", [
+    id,
+  ]);
+
+  return result.affectedRows > 0;
+};
+
 module.exports = {
   findByEmail,
   findById,
@@ -192,4 +209,5 @@ module.exports = {
   createWithProfile,
   exportAccountData,
   anonymizeAccount,
+  hardDelete,
 };
