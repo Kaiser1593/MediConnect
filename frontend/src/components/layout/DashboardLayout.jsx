@@ -3,8 +3,9 @@
 // La sidebar affiche le menu et le rôle passés en props par la page appelante.
 
 import { useEffect, useRef, useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
+import Sidebar from "./Sidebar";
 import Avatar from "../common/Avatar";
 import useAuth from "../../hooks/useAuth";
 
@@ -26,9 +27,6 @@ function DashboardLayout({ role, title, subtitle, menu, children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const sidebarRef = useRef(null);
   const menuToggleRef = useRef(null);
-
-  const getLinkClass = ({ isActive }) =>
-    isActive ? "sidebar-link active" : "sidebar-link";
 
   const fullName = user ? `${user.firstname} ${user.lastname}` : "";
 
@@ -102,59 +100,14 @@ function DashboardLayout({ role, title, subtitle, menu, children }) {
 
   return (
     <div className="dashboard-layout">
-      {isMobileMenuOpen && (
-        <div
-          className="sidebar-backdrop"
-          onClick={closeMobileMenu}
-          aria-hidden="true"
-        />
-      )}
-
-      <aside
-        ref={sidebarRef}
-        className={`sidebar${isMobileMenuOpen ? " mobile-open" : ""}`}
-      >
-        <div className="sidebar-top">
-          <Link to="/" className="sidebar-logo" onClick={closeMobileMenu}>
-            Medi<span>Connect</span>
-          </Link>
-
-          <button
-            type="button"
-            className="sidebar-close"
-            onClick={closeMobileMenu}
-            aria-label="Fermer le menu"
-          >
-            ✕
-          </button>
-        </div>
-
-        <nav className="sidebar-navigation">
-          <p className="sidebar-section-title">{role}</p>
-
-          {menu.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={getLinkClass}
-              onClick={closeMobileMenu}
-            >
-              <span>{item.icon}</span>
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="sidebar-help">
-          <strong>Besoin d’aide ?</strong>
-          <p>Notre assistance est disponible pour vous accompagner.</p>
-          <button type="button">Contacter l’assistance</button>
-        </div>
-
-        <button type="button" className="sidebar-logout" onClick={handleLogout}>
-          Déconnexion
-        </button>
-      </aside>
+      <Sidebar
+        role={role}
+        menu={menu}
+        isMobileMenuOpen={isMobileMenuOpen}
+        sidebarRef={sidebarRef}
+        onClose={closeMobileMenu}
+        onLogout={handleLogout}
+      />
 
       <div className="dashboard-content">
         <header className="dashboard-header">

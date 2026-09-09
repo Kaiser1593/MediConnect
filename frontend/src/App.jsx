@@ -1,8 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 
-import Navbar from "./components/layout/Navbar";
-import Footer from "./components/layout/Footer";
+import DemoLayout from "./components/layout/DemoLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // Chargées à la demande : chaque page ne part sur le réseau que la
@@ -34,17 +33,6 @@ const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 
 import "./App.css";
 
-// Petit utilitaire pour ne pas répéter Navbar et Footer.
-function PublicPage({ children }) {
-  return (
-    <>
-      <Navbar />
-      {children}
-      <Footer />
-    </>
-  );
-}
-
 function App() {
   return (
     <div className="app">
@@ -53,45 +41,45 @@ function App() {
         <Route
           path="/"
           element={
-            <PublicPage>
+            <DemoLayout>
               <Home />
-            </PublicPage>
+            </DemoLayout>
           }
         />
 
         <Route
           path="/connexion"
           element={
-            <PublicPage>
+            <DemoLayout>
               <Login />
-            </PublicPage>
+            </DemoLayout>
           }
         />
 
         <Route
           path="/inscription"
           element={
-            <PublicPage>
+            <DemoLayout>
               <Register />
-            </PublicPage>
+            </DemoLayout>
           }
         />
 
         <Route
           path="/mot-de-passe-oublie"
           element={
-            <PublicPage>
+            <DemoLayout>
               <ForgotPassword />
-            </PublicPage>
+            </DemoLayout>
           }
         />
 
         <Route
           path="/reinitialisation/:token"
           element={
-            <PublicPage>
+            <DemoLayout>
               <ResetPassword />
-            </PublicPage>
+            </DemoLayout>
           }
         />
 
