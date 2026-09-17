@@ -5,6 +5,7 @@
 // (voir database/CHANGELOG.md, section "Photo de profil").
 
 const fs = require("fs");
+const fsPromises = require("fs/promises");
 const path = require("path");
 const crypto = require("crypto");
 const multer = require("multer");
@@ -72,4 +73,26 @@ const uploadAvatar = (req, res, next) => {
   });
 };
 
-module.exports = { uploadAvatar, AVATARS_DIR };
+// Supprime un fichier d'avatar du disque à partir de son chemin public
+// ("/uploads/avatars/xxx.png"). "Best effort" : un fichier déjà absent
+// ne doit jamais faire échouer l'appelant. Partagé par authService
+// (remplacement/suppression volontaire par l'utilisateur) et
+// adminController (purge définitive d'un compte par un administrateur,
+// voir database/CHANGELOG.md) : les deux chemins de suppression de
+// compte doivent nettoyer le fichier, pas seulement la référence en base.
+const deleteAvatarFile = async (avatarUrl) => {
+  if (!avatarUrl) return;
+
+  const filename = path.basename(avatarUrl);
+  const filePath = path.join(AVATARS_DIR, filename);
+
+  try {
+    await fsPromises.unlink(filePath);
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      console.error("Échec de la suppression de l'avatar :", error.message);
+    }
+  }
+};
+
+module.exports = { uploadAvatar, AVATARS_DIR, deleteAvatarFile };

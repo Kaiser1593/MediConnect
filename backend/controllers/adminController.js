@@ -2,6 +2,7 @@
 
 const adminModel = require("../models/adminModel");
 const userModel = require("../models/userModel");
+const { deleteAvatarFile } = require("../middleware/uploadMiddleware");
 const { logSecurityEvent } = require("../utils/logger");
 
 const MONTH_LABELS = [
@@ -391,6 +392,12 @@ const deleteUser = async (req, res, next) => {
         message: "Utilisateur introuvable.",
       });
     }
+
+    // La ligne utilisateurs est supprimée (et avec elle, en cascade, sa
+    // fiche patient/médecin) mais le fichier de photo de profil vit sur le
+    // disque, hors de la base : sans cet appel, il resterait orphelin dans
+    // backend/uploads/avatars/ indéfiniment (voir uploadMiddleware.js).
+    await deleteAvatarFile(targetUser.avatar_url);
 
     logSecurityEvent({
       userId: req.user.id,

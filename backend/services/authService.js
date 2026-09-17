@@ -3,11 +3,9 @@
 // validation du format des champs et la construction de la réponse HTTP.
 
 const crypto = require("crypto");
-const fs = require("fs/promises");
-const path = require("path");
 const jwt = require("jsonwebtoken");
 
-const { AVATARS_DIR } = require("../middleware/uploadMiddleware");
+const { deleteAvatarFile } = require("../middleware/uploadMiddleware");
 
 const userModel = require("../models/userModel");
 const patientModel = require("../models/patientModel");
@@ -356,25 +354,6 @@ const deleteAccount = async ({
     ipAddress,
     userAgent,
   });
-};
-
-// Supprime un ancien fichier d'avatar du disque. "Best effort" comme la
-// journalisation : un fichier déjà absent (ou un chemin externe hérité
-// d'une future intégration) ne doit jamais faire échouer la requête en
-// cours.
-const deleteAvatarFile = async (avatarUrl) => {
-  if (!avatarUrl) return;
-
-  const filename = path.basename(avatarUrl);
-  const filePath = path.join(AVATARS_DIR, filename);
-
-  try {
-    await fs.unlink(filePath);
-  } catch (error) {
-    if (error.code !== "ENOENT") {
-      console.error("Échec de la suppression de l'ancien avatar :", error.message);
-    }
-  }
 };
 
 // Remplace la photo de profil : l'ancien fichier (s'il existe) est

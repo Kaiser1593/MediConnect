@@ -127,3 +127,36 @@ describe("DELETE /api/auth/me/avatar", () => {
     await expect(fs.access(path.join(AVATARS_DIR, filename))).rejects.toThrow();
   });
 });
+
+describe("DELETE /api/admin/users/:id (purge d'un compte avec avatar)", () => {
+  // Trouvé en testant manuellement le parcours complet de l'application :
+  // la suppression définitive d'un compte par un administrateur
+  // (adminController.deleteUser, purge réelle — voir docs/RGPD.md)
+  // supprimait la ligne utilisateurs mais jamais le fichier de photo de
+  // profil associé, qui restait orphelin dans backend/uploads/avatars/.
+  it("supprime aussi le fichier de photo de profil de l'utilisateur purgé", async () => {
+    const token = await registerPatient();
+
+    const uploadResponse = await request(app)
+      .post("/api/auth/me/avatar")
+      .set("Authorization", `Bearer ${token}`)
+      .attach("avatar", TINY_PNG, "avatar.png");
+
+    const filename = path.basename(uploadResponse.body.avatarUrl);
+
+    const meResponse = await request(app).get("/api/auth/me").set("Authorization", `Bearer ${token}`);
+    const userId = meResponse.body.user.id;
+
+    const adminLogin = await request(app).post("/api/auth/login").send({
+      email: "admin.test@integration-test.local",
+      password: "AdminTest123!",
+    });
+
+    const deleteResponse = await request(app)
+      .delete(`/api/admin/users/${userId}`)
+      .set("Authorization", `Bearer ${adminLogin.body.token}`);
+
+    expect(deleteResponse.status).toBe(200);
+    await expect(fs.access(path.join(AVATARS_DIR, filename))).rejects.toThrow();
+  });
+});
